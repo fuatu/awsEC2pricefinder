@@ -11,7 +11,6 @@ db_name = 'awsprices.db'
 txt_regions = \
     '''
         US East (N. Virginia)
-        US East (N. Virginia)
         EU (Ireland)
         Asia Pacific (Hong Kong)
         Asia Pacific (Mumbai)
