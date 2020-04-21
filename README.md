@@ -1,5 +1,13 @@
 # awsEC2pricefinder
 
+## Install
+tested with Python 3.7
+
+To install requirements, run command:
+```
+$ pip3 install -r requirements.txt
+```
+
 ## graphical interface
 run without parameters
 ```
