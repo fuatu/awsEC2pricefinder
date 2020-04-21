@@ -76,7 +76,8 @@ list_os = [
 os_map = {
     'Linux': 'Linux/UNIX (Amazon VPC)',
     'SUSE': 'SUSE Linux (Amazon VPC)',
-    'Windows': 'Windows (Amazon VPC)'
+    'Windows': 'Windows (Amazon VPC)',
+    'RHEL': 'Red Hat Enterprise Linux'
 }
 
 region_map = {
