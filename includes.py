@@ -297,10 +297,11 @@ def get_ec2_ondemand_price(instances=[], os=None, region="None") -> defaultdict(
     pricing, ec2s = pricing_boto(region=region)
     results = defaultdict(None)
     for ii in instances:
-        spot = ec2s.describe_spot_price_history(InstanceTypes=[ii,],MaxResults=1,ProductDescriptions=[os_map[os]])
         try:
+            spot = ec2s.describe_spot_price_history(InstanceTypes=[ii, ], MaxResults=1,
+                                                    ProductDescriptions=[os_map[os]])
             results[ii] = float(spot['SpotPriceHistory'][0]['SpotPrice'])
-        except IndexError:
+        except (IndexError,KeyError) as e:
             results[ii] = 0
     return results
 

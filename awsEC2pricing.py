@@ -128,7 +128,7 @@ class FirstFrame(tk.Frame):
         for i in range(limit):
             self.results.delete(str(i + 1) + ".0", tk.END)
         instances = [rr[1] for rr in result]
-        on_demand_prices = get_ec2_ondemand_price(instances=instances, os=pos, region=region)
+        on_demand_prices = get_ec2_ondemand_price(instances=instances, os=os, region=region)
         #self.results.tag_add("header","1.0","end")
         self.results.tag_configure("header", foreground="red")
         txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<11} {6:<8} {6:<8}" \
