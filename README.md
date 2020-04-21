@@ -14,25 +14,25 @@ run without parameters
 $ python awsEC2pricing.py
 ```
 
-![alt text](https://i.ibb.co/71wK6Dm/image.png)
+![alt text](https://i.ibb.co/4WdgTzm/image.png)
 
 ## example output from terminal
 ```
-$ python awsEC2pricing.py -t 4 8 Windows 'EU (Ireland)'
+$  python awsEC2pricing.py -t 2 4 
 Records are up-to-date
 --------------------------
- vCPU: 4.00
- RAM: 8.00
- OS: Windows
- Region: EU (Ireland)
+ vCPU: 2.00
+ RAM: 4.00
+ OS: Linux
+ Region: US East (N. Virginia)
 --------------------------
-
-t3a.xlarge      vCPU 4.00    RAM 16.00  OS Windows    PriceH 0.23680  PriceM 170.49600
-t2.xlarge       vCPU 4.00    RAM 16.00  OS Windows    PriceH 0.24260  PriceM 174.67200
-t3.xlarge       vCPU 4.00    RAM 16.00  OS Windows    PriceH 0.25600  PriceM 184.32000
-m5a.xlarge      vCPU 4.00    RAM 16.00  OS Windows    PriceH 0.37600  PriceM 270.72000
-c5.xlarge       vCPU 4.00    RAM 8.00   OS Windows    PriceH 0.37600  PriceM 270.72000
-m5.xlarge       vCPU 4.00    RAM 16.00  OS Windows    PriceH 0.39800  PriceM 286.56000
+Instance        vCPU   RAM    OS         PriceH   PriceM      SpotH    SpotH   
+t3a.medium      2.00   4.00   Linux      0.03760  27.07200    0.01140  8.20800
+t3.medium       2.00   4.00   Linux      0.04160  29.95200    0.01250  9.00000
+t2.medium       2.00   4.00   Linux      0.04640  33.40800    0.01440  10.36800
+a1.large        2.00   4.00   Linux      0.05100  36.72000    0.02340  16.84800
+t3a.large       2.00   8.00   Linux      0.07520  54.14400    0.02270  16.34400
+m6g.large       2.00   8.00   Linux      0.07700  55.44000    0.00000  0.00000
 ```
 
 ## help output:
