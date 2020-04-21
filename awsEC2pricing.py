@@ -133,7 +133,7 @@ class FirstFrame(tk.Frame):
             spotprice_hourly = on_demand_prices[rr[1]]
             spotprice_monthly = spotprice_hourly*24*30
             self.results.insert(tk.END,
-                                "{0: <15} vCPU {1:<6.2f}  RAM {2:<6.2f} OS {3: <10} PriceH {4:.5f}  PriceM {5:.5f} SpotH {6:.5f} SpotM {7:.5f}\n"
+                                "{0: <15} vCPU {1:<6.2f}  RAM {2:<6.2f} OS {3: <10} PriceH {4:.5f}  PriceM {5:<10.5f} SpotH {6:.5f} SpotM {7:.5f}\n"
                                 .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, spotprice_hourly, spotprice_monthly))
 
 
@@ -178,7 +178,7 @@ if text_only:
                   Fore.GREEN + " vCPU: {0:.2f}\n RAM: {1:.2f}\n OS: {2}\n Region: {3}\n" + \
                   Style.RESET_ALL + "--------------------------"
     print(Fore.GREEN + txt_message.format(pvcpu, pram, pos, pregion))
-    txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<10} {6:<8} {6:<8}" \
+    txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<11} {6:<8} {6:<8}" \
                   .format("Instance", "vCPU", "RAM", "OS", "PriceH", "PriceM", "SpotH", "SpotM")
     print(Fore.LIGHTGREEN_EX + txt_header)
     instances = [rr[1] for rr in result]
@@ -186,7 +186,7 @@ if text_only:
     for rr in result:
         spotprice_hourly = on_demand_prices[rr[1]]
         spotprice_monthly = spotprice_hourly * 24 * 30
-        print(Fore.GREEN + "{0: <15} {1:<6.2f} {2:<6.2f} {3: <10} {4:.5f}  {5:.5f}  {6:.5f}  {7:.5f}"
+        print(Fore.GREEN + "{0: <15} {1:<6.2f} {2:<6.2f} {3: <10} {4:.5f}  {5:<10.5f}  {6:.5f}  {7:.5f}"
                             .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, spotprice_hourly, spotprice_monthly))
     print(Style.RESET_ALL)
 else:
