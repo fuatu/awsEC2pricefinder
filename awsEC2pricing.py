@@ -84,7 +84,7 @@ class FirstFrame(tk.Frame):
         self.input_cpu = tk.DoubleVar()
         self.input_region = tk.StringVar()
         self.input_os = tk.StringVar()
-        self.results = tk.Text(self, height=7, width=100, relief="groove", borderwidth=2)
+        self.results = tk.Text(self, height=7, width=120, relief="groove", borderwidth=2)
 
         self.ec2_details()
 
@@ -127,10 +127,14 @@ class FirstFrame(tk.Frame):
         result = find_ec2(cpu=cpu, ram=ram, os=os, region=region, limit=limit)
         for i in range(limit):
             self.results.delete(str(i + 1) + ".0", tk.END)
+        instances = [rr[1] for rr in result]
+        on_demand_prices = get_ec2_ondemand_price(instances=instances, os=pos, region=region)
         for rr in result:
+            spotprice_hourly = on_demand_prices[rr[1]]
+            spotprice_monthly = spotprice_hourly*24*30
             self.results.insert(tk.END,
-                                "{0: <15} vCPU {1:<6.2f}  RAM {2:<6.2f} OS {3: <10} PriceH {4:.5f}  PriceM {5:.5f}\n"
-                                .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30))
+                                "{0: <15} vCPU {1:<6.2f}  RAM {2:<6.2f} OS {3: <10} PriceH {4:.5f}  PriceM {5:.5f} SpotH {6:.5f} SpotM {7:.5f}\n"
+                                .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, spotprice_hourly, spotprice_monthly))
 
 
 
@@ -145,54 +149,6 @@ def create_db():
     con.commit()
     cObj.close()
     con.close()
-
-
-
-def print_services():
-    pricing = pricing_boto()
-    print("All Services")
-    print("============")
-    response = pricing.describe_services()
-    for service in response['Services']:
-        print(service['ServiceCode'] + ": " + ", ".join(service['AttributeNames']))
-    print()
-
-def EC2_attributes():
-    pricing = pricing_boto()
-    print("Selected EC2 Attributes & Values")
-    print("================================")
-    response = pricing.describe_services(ServiceCode='AmazonEC2')
-    attrs = response['Services'][0]['AttributeNames']
-
-    for attr in attrs:
-        response = pricing.get_attribute_values(ServiceCode='AmazonEC2', AttributeName=attr)
-
-        values = []
-        for attr_value in response['AttributeValues']:
-            values.append(attr_value['Value'])
-
-        print("  " + attr + ": " + ", ".join(values))
-
-
-
-
-
-def print_prices_from_db():
-    con = sqlite3.connect('awsprices.db')
-    cObj = con.cursor()
-    sql_query = "SELECT * FROM ec2"
-    cObj.execute(sql_query)
-    result = cObj.fetchall()
-    cObj.close()
-    con.close()
-    if result == []:
-        print("No records")
-    print("Selected EC2 Products")
-    print("=====================")
-    for rr in result:
-        print("{0: <4} Instance Type: {1: <14} \tvCPU: {2: <4} \tmemory: {3: <5} \tos: {4: <8} \tprice {5}".format(
-            rr[0], rr[1], rr[2], rr[3], rr[4], rr[5]))
-
 
 if len(sys.argv) > 1:
     if sys.argv[1] == '-t':
@@ -220,11 +176,18 @@ if text_only:
     result = find_ec2(cpu=pvcpu, ram=pram, os=pos, region=pregion, limit=6)
     txt_message = Style.RESET_ALL + "--------------------------\n" + \
                   Fore.GREEN + " vCPU: {0:.2f}\n RAM: {1:.2f}\n OS: {2}\n Region: {3}\n" + \
-                  Style.RESET_ALL + "--------------------------\n"
+                  Style.RESET_ALL + "--------------------------"
     print(Fore.GREEN + txt_message.format(pvcpu, pram, pos, pregion))
+    txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<10} {6:<8} {6:<8}" \
+                  .format("Instance", "vCPU", "RAM", "OS", "PriceH", "PriceM", "SpotH", "SpotM")
+    print(Fore.LIGHTGREEN_EX + txt_header)
+    instances = [rr[1] for rr in result]
+    on_demand_prices = get_ec2_ondemand_price(instances=instances, os=pos, region=pregion)
     for rr in result:
-        print(Fore.GREEN + "{0: <15} vCPU {1:<6.2f}  RAM {2:<6.2f} OS {3: <10} PriceH {4:.5f}  PriceM {5:.5f}"
-                            .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30))
+        spotprice_hourly = on_demand_prices[rr[1]]
+        spotprice_monthly = spotprice_hourly * 24 * 30
+        print(Fore.GREEN + "{0: <15} {1:<6.2f} {2:<6.2f} {3: <10} {4:.5f}  {5:.5f}  {6:.5f}  {7:.5f}"
+                            .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, spotprice_hourly, spotprice_monthly))
     print(Style.RESET_ALL)
 else:
     myapp = MyApplication()
