@@ -84,7 +84,7 @@ class FirstFrame(tk.Frame):
         self.input_cpu = tk.DoubleVar()
         self.input_region = tk.StringVar()
         self.input_os = tk.StringVar()
-        self.results = tk.Text(self, height=7, width=120, relief="groove", borderwidth=2)
+        self.results = tk.Text(self, height=8, width=100, relief="groove", borderwidth=2)
 
         self.ec2_details()
 
@@ -129,12 +129,17 @@ class FirstFrame(tk.Frame):
             self.results.delete(str(i + 1) + ".0", tk.END)
         instances = [rr[1] for rr in result]
         on_demand_prices = get_ec2_ondemand_price(instances=instances, os=pos, region=region)
+        #self.results.tag_add("header","1.0","end")
+        self.results.tag_configure("header", foreground="red")
+        txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<11} {6:<8} {6:<8}" \
+            .format("Instance", "vCPU", "RAM", "OS", "PriceH", "PriceM", "SpotH", "SpotM")
+        self.results.insert(tk.END,txt_header + "\n", "header")
         for rr in result:
             spotprice_hourly = on_demand_prices[rr[1]]
             spotprice_monthly = spotprice_hourly*24*30
             self.results.insert(tk.END,
-                                "{0: <15} vCPU {1:<6.2f}  RAM {2:<6.2f} OS {3: <10} PriceH {4:.5f}  PriceM {5:<10.5f} SpotH {6:.5f} SpotM {7:.5f}\n"
-                                .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, spotprice_hourly, spotprice_monthly))
+                            "{0: <15} {1:<6.2f} {2:<6.2f} {3: <10} {4:.5f}  {5:<10.5f}  {6:.5f}  {7:.5f}\n" \
+                            .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, spotprice_hourly, spotprice_monthly))
 
 
 
