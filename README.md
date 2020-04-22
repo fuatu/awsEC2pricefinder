@@ -3,10 +3,15 @@
 ## Install
 tested with Python 3.7
 
+#### Install requirements
 To install requirements, run command:
 ```
 $ pip3 install -r requirements.txt
 ```
+#### AWS credentials
+Copy credentails.yaml.example to cp credentails.yaml.example
+Edit it and fill aws key+secret details. 
+Your AWS user needs to have authorization to read pricing.
 
 ## graphical interface
 run without parameters
@@ -75,3 +80,11 @@ Regions:
     US West (Oregon)
 ----------------------------------
 ```
+## Predefine filter conditions 
+
+- preInstalledSw: NA 
+- storage: EBS only 
+- productFamily: Compute Instance
+- termType: OnDemand
+- licenseModel: No License 
+- requiredcapacitystatus: Used
