@@ -183,7 +183,7 @@ if text_only:
                   Fore.GREEN + " vCPU: {0:.2f}\n RAM: {1:.2f}\n OS: {2}\n Region: {3}\n" + \
                   Style.RESET_ALL + "--------------------------"
     print(Fore.GREEN + txt_message.format(pvcpu, pram, pos, pregion))
-    txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<11} {6:<8} {6:<8}" \
+    txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<11} {6:<8} {7:<8}" \
                   .format("Instance", "vCPU", "RAM", "OS", "PriceH", "PriceM", "SpotH", "SpotM")
     print(Fore.LIGHTGREEN_EX + txt_header)
     instances = [rr[1] for rr in result]
