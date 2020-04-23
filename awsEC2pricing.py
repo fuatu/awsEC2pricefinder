@@ -131,7 +131,7 @@ class FirstFrame(tk.Frame):
         on_demand_prices = get_ec2_ondemand_price(instances=instances, os=os, region=region)
         #self.results.tag_add("header","1.0","end")
         self.results.tag_configure("header", foreground="red")
-        txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<11} {6:<8} {6:<8}" \
+        txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<11} {6:<8} {7:<8}" \
             .format("Instance", "vCPU", "RAM", "OS", "PriceH", "PriceM", "SpotH", "SpotM")
         self.results.insert(tk.END,txt_header + "\n", "header")
         for rr in result:

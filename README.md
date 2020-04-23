@@ -11,7 +11,7 @@ $ pip3 install -r requirements.txt
 #### AWS credentials
 Copy credentails.yaml.example to cp credentails.yaml.example
 Edit it and fill aws key+secret details. 
-Your AWS user needs to have authorization to read pricing.
+Your AWS user needs to have IAM rights to read pricing.
 
 ## graphical interface
 run without parameters
