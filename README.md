@@ -9,7 +9,7 @@ To install requirements, run command:
 $ pip3 install -r requirements.txt
 ```
 #### AWS credentials
-Copy credentails.yaml.example to cp credentails.yaml.example
+Copy credentails.yaml.example to credentails.yaml
 Edit it and fill aws key+secret details. 
 Your AWS user needs to have IAM rights to read pricing.
 
