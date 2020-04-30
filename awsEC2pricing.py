@@ -129,7 +129,7 @@ class FirstFrame(tk.Frame):
             self.results.delete(str(i + 1) + ".0", tk.END)
         instances = [rr[1] for rr in result]
         spot_prices = get_ec2_spot_price(instances=instances, os=os, region=region)
-        spot_interrupt_rates = get_ec2_spot_interruption(instances=instances, os=pos, region=region_map[region])
+        spot_interrupt_rates = get_ec2_spot_interruption(instances=instances, os=os, region=region_map[region])
         #self.results.tag_add("header","1.0","end")
         self.results.tag_configure("header", foreground="red")
         txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<11} {6:<8} {7:<8} {8}" \
