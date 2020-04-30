@@ -19,11 +19,11 @@ run without parameters
 $ python awsEC2pricing.py
 ```
 
-![alt text](https://i.ibb.co/nQGThyq/image.png)
+![alt text](https://i.ibb.co/fFQQ7zp/image.png)
 
 ## example output from terminal
 ```
-$  python awsEC2pricing.py -t 2 4 
+$ python3 awsEC2pricing.py -t 2 4
 Records are up-to-date
 --------------------------
  vCPU: 2.00
@@ -31,12 +31,12 @@ Records are up-to-date
  OS: Linux
  Region: US East (N. Virginia)
 --------------------------
-Instance        vCPU   RAM    OS         PriceH   PriceM      SpotH    SpotM   
-t3a.medium      2.00   4.00   Linux      0.03760  27.07200    0.01140  8.20800
-t3.medium       2.00   4.00   Linux      0.04160  29.95200    0.01250  9.00000
-t2.medium       2.00   4.00   Linux      0.04640  33.40800    0.01440  10.36800
-a1.large        2.00   4.00   Linux      0.05100  36.72000    0.02340  16.84800
-t3a.large       2.00   8.00   Linux      0.07520  54.14400    0.02270  16.34400
+Instance        vCPU   RAM    OS         PriceH   PriceM      SpotH    SpotM    KillRate
+t3a.medium      2.00   4.00   Linux      0.03760  27.07200    0.01140  8.20800  2% 
+t3.medium       2.00   4.00   Linux      0.04160  29.95200    0.01250  9.00000  0% 
+t2.medium       2.00   4.00   Linux      0.04640  33.40800    0.01430  10.29600 0% 
+a1.large        2.00   4.00   Linux      0.05100  36.72000    0.01980  14.25600 4% 
+t3a.large       2.00   8.00   Linux      0.07520  54.14400    0.02260  16.27200 1% 
 m6g.large       2.00   8.00   Linux      0.07700  55.44000    0.00000  0.00000
 ```
 
@@ -80,7 +80,7 @@ Regions:
     US West (Oregon)
 ----------------------------------
 ```
-## Predefine filter conditions 
+## Predefined filter conditions 
 
 - preInstalledSw: NA 
 - storage: EBS only 

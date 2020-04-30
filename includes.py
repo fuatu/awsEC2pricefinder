@@ -306,4 +306,34 @@ def get_ec2_ondemand_price(instances=[], os=None, region="None") -> defaultdict(
             results[ii] = 0
     return results
 
+def get_ec2_spot_price(instances=[], os=None, region="None") -> defaultdict(None):
+    pricing, ec2s = pricing_boto(region=region)
+    results = defaultdict(None)
+    for ii in instances:
+        try:
+            spot = ec2s.describe_spot_price_history(InstanceTypes=[ii, ], MaxResults=1,
+                                                    ProductDescriptions=[os_map[os]])
+            results[ii] = float(spot['SpotPriceHistory'][0]['SpotPrice'])
+        except (IndexError,KeyError) as e:
+            results[ii] = 0
+    return results
 
+
+def get_ec2_spot_interruption(instances=[], os=None, region="None") -> defaultdict(None):
+    import requests
+    import json
+    results = defaultdict(None)
+    url_interruptions = "https://spot-bid-advisor.s3.amazonaws.com/spot-advisor-data.json"
+    try:
+        response = requests.get(url=url_interruptions)
+        spot_advisor = json.loads(response.text)['spot_advisor']
+    except requests.exceptions.ConnectionError:
+        return
+
+    for ii in instances:
+        try:
+            rate = spot_advisor[region][os][ii]['r']
+            results[ii] = "{}%".format(rate)
+        except (IndexError,KeyError):
+            results[ii] = ""
+    return results
