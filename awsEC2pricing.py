@@ -132,7 +132,7 @@ class FirstFrame(tk.Frame):
         spot_interrupt_rates = get_ec2_spot_interruption(instances=instances, os=os, region=region_map[region])
         #self.results.tag_add("header","1.0","end")
         self.results.tag_configure("header", foreground="red")
-        txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<11} {6:<8} {7:<8} {8}" \
+        txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<11} {6:<8} {7:<10} {8}" \
                   .format("Instance", "vCPU", "RAM", "OS", "PriceH", "PriceM", "SpotH", "SpotM", "KillRate")
         self.results.insert(tk.END,txt_header + "\n", "header")
         for rr in result:
@@ -140,7 +140,7 @@ class FirstFrame(tk.Frame):
             spotprice_monthly = spotprice_hourly*24*30
             kill_rate = spot_interrupt_rates[rr[1]]
             self.results.insert(tk.END,
-                            "{0: <15} {1:<6.2f} {2:<6.2f} {3: <10} {4:.5f}  {5:<10.5f}  {6:.5f}  {7:<8.5f} {8:<3}\n" \
+                            "{0: <15} {1:<6.2f} {2:<6.2f} {3: <10} {4:.5f}  {5:<10.5f}  {6:.5f}  {7:<10.5f} {8:<3}\n" \
                             .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, spotprice_hourly, spotprice_monthly, kill_rate))
 
 
@@ -185,7 +185,7 @@ if text_only:
                   Fore.GREEN + " vCPU: {0:.2f}\n RAM: {1:.2f}\n OS: {2}\n Region: {3}\n" + \
                   Style.RESET_ALL + "--------------------------"
     print(Fore.GREEN + txt_message.format(pvcpu, pram, pos, pregion))
-    txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<11} {6:<8} {7:<8} {8}" \
+    txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<11} {6:<8} {7:<10} {8}" \
                   .format("Instance", "vCPU", "RAM", "OS", "PriceH", "PriceM", "SpotH", "SpotM", "KillRate")
     print(Fore.LIGHTGREEN_EX + txt_header)
     instances = [rr[1] for rr in result]
@@ -195,7 +195,7 @@ if text_only:
         spotprice_hourly = spot_prices[rr[1]]
         spotprice_monthly = spotprice_hourly * 24 * 30
         kill_rate = spot_interrupt_rates[rr[1]]
-        print(Fore.GREEN + "{0: <15} {1:<6.2f} {2:<6.2f} {3: <10} {4:.5f}  {5:<10.5f}  {6:.5f}  {7:<8.5f} {8:<3}"
+        print(Fore.GREEN + "{0: <15} {1:<6.2f} {2:<6.2f} {3: <10} {4:.5f}  {5:<10.5f}  {6:.5f}  {7:<10.5f} {8:<3}"
                             .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, spotprice_hourly, spotprice_monthly, kill_rate))
     print(Style.RESET_ALL)
 else:

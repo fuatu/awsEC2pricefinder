@@ -329,11 +329,17 @@ def get_ec2_spot_interruption(instances=[], os=None, region="None") -> defaultdi
         spot_advisor = json.loads(response.text)['spot_advisor']
     except requests.exceptions.ConnectionError:
         return
-
+    rates = {
+        0: "<5%",
+        1: "5-10%",
+        2: "10-15%",
+        3: "15-20%",
+        4: ">20%"
+    }
     for ii in instances:
         try:
             rate = spot_advisor[region][os][ii]['r']
-            results[ii] = "{}%".format(rate)
+            results[ii] = rates[rate]
         except (IndexError,KeyError):
             results[ii] = ""
     return results
