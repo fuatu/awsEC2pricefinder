@@ -173,7 +173,7 @@ def get_ec2_pricing(region=pregion):
         print("Records are up-to-date")
         # print_prices_from_db()
         return
-    pricing = pricing_boto(region=pregion)
+    pricing, ec2s = pricing_boto(region=pregion)
     dt_today = date.today()
     next_token = ''
     while next_token is not None:
@@ -253,7 +253,7 @@ def insert_records(rc: []):
     con.close()
 
 def print_services():
-    pricing = pricing_boto()
+    pricing, ec2s = pricing_boto()
     print("All Services")
     print("============")
     response = pricing.describe_services()
@@ -262,7 +262,7 @@ def print_services():
     print()
 
 def EC2_attributes():
-    pricing = pricing_boto()
+    pricing, ec2s = pricing_boto()
     print("Selected EC2 Attributes & Values")
     print("================================")
     response = pricing.describe_services(ServiceCode='AmazonEC2')
