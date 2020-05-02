@@ -19,25 +19,25 @@ run without parameters
 $ python awsEC2pricing.py
 ```
 
-![alt text](https://i.ibb.co/fFQQ7zp/image.png)
+![alt text](https://i.ibb.co/G0vdH9Y/image.png)
 
 ## example output from terminal
 ```
-$ python3 awsEC2pricing.py -t 2 4
+$ python awsEC2pricing.py -t 8 32
 Records are up-to-date
 --------------------------
- vCPU: 2.00
- RAM: 4.00
+ vCPU: 8.00
+ RAM: 32.00
  OS: Linux
  Region: US East (N. Virginia)
 --------------------------
-Instance        vCPU   RAM    OS         PriceH   PriceM      SpotH    SpotM    KillRate
-t3a.medium      2.00   4.00   Linux      0.03760  27.07200    0.01140  8.20800  2% 
-t3.medium       2.00   4.00   Linux      0.04160  29.95200    0.01250  9.00000  0% 
-t2.medium       2.00   4.00   Linux      0.04640  33.40800    0.01430  10.29600 0% 
-a1.large        2.00   4.00   Linux      0.05100  36.72000    0.01980  14.25600 4% 
-t3a.large       2.00   8.00   Linux      0.07520  54.14400    0.02260  16.27200 1% 
-m6g.large       2.00   8.00   Linux      0.07700  55.44000    0.00000  0.00000
+Instance        vCPU   RAM    OS         PriceH   PriceM      SpotH    SpotM      KillRate
+t3a.2xlarge     8.00   32.00  Linux      0.30080  216.57600   0.10610  76.39200   <5%
+m6g.2xlarge     8.00   32.00  Linux      0.30800  221.76000   0.00000  0.00000       
+t3.2xlarge      8.00   32.00  Linux      0.33280  239.61600   0.16100  115.92000  <5%
+m5a.2xlarge     8.00   32.00  Linux      0.34400  247.68000   0.20950  150.84000  15-20%
+t2.2xlarge      8.00   32.00  Linux      0.37120  267.26400   0.11850  85.32000   >20%
+m5.2xlarge      8.00   32.00  Linux      0.38400  276.48000   0.19390  139.60800  5-10%
 ```
 
 ## help output:

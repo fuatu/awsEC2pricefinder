@@ -319,7 +319,7 @@ def get_ec2_spot_price(instances=[], os=None, region="None") -> defaultdict(None
     return results
 
 
-def get_ec2_spot_interruption(instances=[], os=None, region="None") -> defaultdict(None):
+def get_ec2_spot_interruption(instances=[], os=None, region=None) -> defaultdict(None):
     import requests
     import json
     results = defaultdict(None)
