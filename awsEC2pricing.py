@@ -8,8 +8,6 @@ from tkinter import ttk
 
 
 class MyApplication(tk.Tk):
-    """Hello World Main Application"""
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title("Find best pricing for AWS")

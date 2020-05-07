@@ -2,3 +2,4 @@ credentials.yaml
 .idea
 __pycache__
 awsprices.db
+.vscode
