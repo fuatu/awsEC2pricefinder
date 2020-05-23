@@ -3,3 +3,4 @@ credentials.yaml
 __pycache__
 awsprices.db
 .vscode
+env
