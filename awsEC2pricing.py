@@ -166,17 +166,17 @@ if len(sys.argv) > 5:
 
 if text_only:
     limit = 6
-    result = find_ec2(cpu=pvcpu, ram=pram, os=pos, region=pregion, limit=6)
+    result = find_ec2(cpu=PAR_VCPU, ram=P_RAM, os=P_OS, region=P_REGION, limit=6)
     txt_message = Style.RESET_ALL + "--------------------------\n" + \
                   Fore.GREEN + " vCPU: {0:.2f}\n RAM: {1:.2f}\n OS: {2}\n Region: {3}\n" + \
                   Style.RESET_ALL + "--------------------------"
-    print(Fore.GREEN + txt_message.format(pvcpu, pram, pos, pregion))
+    print(Fore.GREEN + txt_message.format(PAR_VCPU, P_RAM, P_OS, P_REGION))
     txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<11} {6:<8} {7:<10} {8}" \
                   .format("Instance", "vCPU", "RAM", "OS", "PriceH", "PriceM", "SpotH", "SpotM", "KillRate")
     print(Fore.LIGHTGREEN_EX + txt_header)
     instances = [rr[1] for rr in result]
-    spot_prices = get_ec2_spot_price(instances=instances, os=pos, region=pregion)
-    spot_interrupt_rates = get_ec2_spot_interruption(instances=instances, os=pos, region=region_map[pregion])
+    spot_prices = get_ec2_spot_price(instances=instances, os=P_OS, region=P_REGION)
+    spot_interrupt_rates = get_ec2_spot_interruption(instances=instances, os=P_OS, region=region_map[P_REGION])
     for rr in result:
         spotprice_hourly = spot_prices[rr[1]]
         spotprice_monthly = spotprice_hourly * 24 * 30
