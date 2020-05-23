@@ -214,6 +214,7 @@ def get_ec2_pricing(region=pregion):
 
 
 def are_records_old(region=pregion):
+    create_db()
     con = sqlite3.connect(db_name)
     cobj = con.cursor()
     sql_query = "SELECT add_date FROM ec2 WHERE region=? LIMIT 1"
@@ -343,3 +344,15 @@ def get_ec2_spot_interruption(instances=[], os=None, region=None) -> defaultdict
         except (IndexError,KeyError):
             results[ii] = ""
     return results
+
+def create_db():
+    con = sqlite3.connect('awsprices.db')
+    cObj = con.cursor()
+    # create table if does not exist
+    sql_query =  "CREATE TABLE IF NOT EXISTS " \
+                 "ec2(id INTEGER PRIMARY KEY, instanceType TEXT, vcpu REAL, memory REAL, " \
+                 "os TEXT, price REAL, region TEXT, add_date DATE)"
+    cObj.execute(sql_query)
+    con.commit()
+    cObj.close()
+    con.close()

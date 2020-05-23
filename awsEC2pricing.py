@@ -143,18 +143,6 @@ class FirstFrame(tk.Frame):
 
 
 
-def create_db():
-    con = sqlite3.connect('awsprices.db')
-    cObj = con.cursor()
-    # create table if does not exist
-    sql_query =  "CREATE TABLE IF NOT EXISTS " \
-                 "ec2(id INTEGER PRIMARY KEY, instanceType TEXT, vcpu REAL, memory REAL, " \
-                 "os TEXT, price REAL, region TEXT, add_date DATE)"
-    cObj.execute(sql_query)
-    con.commit()
-    cObj.close()
-    con.close()
-
 if len(sys.argv) > 1:
     if sys.argv[1] == '-t':
         text_only=True
