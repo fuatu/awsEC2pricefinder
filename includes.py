@@ -3,14 +3,14 @@ import sqlite3
 from datetime import date
 from collections import defaultdict
 
-pvcpu = 2
-pram = 4
-pregion = 'US East (N. Virginia)'
-pos = 'Linux'
-db_name = 'awsprices.db'
+PAR_VCPU = 2
+P_RAM = 4
+P_REGION = 'US East (N. Virginia)'
+P_OS = 'Linux'
+DB_NAME = 'awsprices.db'
 
-availability_zone = ""
-txt_regions = \
+AVAILABILITY_ZONE = ""
+REGIONS = \
     '''
         US East (N. Virginia)
         EU (Ireland)
@@ -120,7 +120,7 @@ def print_help():
     print(Style.RESET_ALL)
     print("----------------------------------")
     print(Fore.GREEN + "Regions:")
-    print(txt_regions)
+    print(REGIONS)
     print(Style.RESET_ALL + "----------------------------------")
     exit()
 
@@ -153,9 +153,9 @@ def pricing_boto(region=None):
     return session.client('pricing'), session.client('ec2')
 
 
-def find_ec2(cpu=pvcpu, ram=pram, os='Linux', region=pregion, limit=6):
+def find_ec2(cpu=PAR_VCPU, ram=P_RAM, os='Linux', region=P_REGION, limit=6):
     get_ec2_pricing(region=region)
-    con = sqlite3.connect(db_name)
+    con = sqlite3.connect(DB_NAME)
     cobj = con.cursor()
     sql_query = "SELECT * FROM ec2 WHERE vcpu>=? AND memory>=? AND region=? AND os=? ORDER BY price LIMIT " + str(limit)
     cobj.execute(sql_query, (cpu, ram, region, os))
@@ -165,7 +165,7 @@ def find_ec2(cpu=pvcpu, ram=pram, os='Linux', region=pregion, limit=6):
     return result
 
 
-def get_ec2_pricing(region=pregion):
+def get_ec2_pricing(region=P_REGION):
     if are_records_old(region=region):
         print("Getting price updates for EC2s")
         delete_records(region)
@@ -173,7 +173,7 @@ def get_ec2_pricing(region=pregion):
         print("Records are up-to-date")
         # print_prices_from_db()
         return
-    pricing, ec2s = pricing_boto(region=pregion)
+    pricing, ec2s = pricing_boto(region=P_REGION)
     dt_today = date.today()
     next_token = ''
     while next_token is not None:
@@ -213,9 +213,9 @@ def get_ec2_pricing(region=pregion):
         insert_records(rc=records)
 
 
-def are_records_old(region=pregion):
+def are_records_old(region=P_REGION):
     create_db()
-    con = sqlite3.connect(db_name)
+    con = sqlite3.connect(DB_NAME)
     cobj = con.cursor()
     sql_query = "SELECT add_date FROM ec2 WHERE region=? LIMIT 1"
     cobj.execute(sql_query, (region,))
@@ -235,7 +235,7 @@ def are_records_old(region=pregion):
 
 
 def delete_records(region: str):
-    con = sqlite3.connect(db_name)
+    con = sqlite3.connect(DB_NAME)
     cobj = con.cursor()
     cobj.execute("DELETE FROM ec2 WHERE region=?", (region,))
     con.commit()
@@ -244,7 +244,7 @@ def delete_records(region: str):
 
 
 def insert_records(rc: []):
-    con = sqlite3.connect(db_name)
+    con = sqlite3.connect(DB_NAME)
     cobj = con.cursor()
     for rr in rc:
         cobj.execute(
@@ -262,7 +262,7 @@ def print_services():
         print(service['ServiceCode'] + ": " + ", ".join(service['AttributeNames']))
     print()
 
-def EC2_attributes():
+def ec2_attributes():
     pricing, ec2s = pricing_boto()
     print("Selected EC2 Attributes & Values")
     print("================================")
@@ -280,12 +280,12 @@ def EC2_attributes():
 
 
 def print_prices_from_db():
-    con = sqlite3.connect('awsprices.db')
-    cObj = con.cursor()
+    con = sqlite3.connect(DB_NAME)
+    c_obj = con.cursor()
     sql_query = "SELECT * FROM ec2"
-    cObj.execute(sql_query)
-    result = cObj.fetchall()
-    cObj.close()
+    c_obj.execute(sql_query)
+    result = c_obj.fetchall()
+    c_obj.close()
     con.close()
     if result == []:
         print("No records")
@@ -303,7 +303,7 @@ def get_ec2_ondemand_price(instances=[], os=None, region="None") -> defaultdict(
             spot = ec2s.describe_spot_price_history(InstanceTypes=[ii, ], MaxResults=1,
                                                     ProductDescriptions=[os_map[os]])
             results[ii] = float(spot['SpotPriceHistory'][0]['SpotPrice'])
-        except (IndexError,KeyError) as e:
+        except (IndexError,KeyError) as _:
             results[ii] = 0
     return results
 
@@ -315,7 +315,7 @@ def get_ec2_spot_price(instances=[], os=None, region="None") -> defaultdict(None
             spot = ec2s.describe_spot_price_history(InstanceTypes=[ii, ], MaxResults=1,
                                                     ProductDescriptions=[os_map[os]])
             results[ii] = float(spot['SpotPriceHistory'][0]['SpotPrice'])
-        except (IndexError,KeyError) as e:
+        except (IndexError,KeyError) as _:
             results[ii] = 0
     return results
 
@@ -346,13 +346,13 @@ def get_ec2_spot_interruption(instances=[], os=None, region=None) -> defaultdict
     return results
 
 def create_db():
-    con = sqlite3.connect('awsprices.db')
-    cObj = con.cursor()
+    con = sqlite3.connect(DB_NAME)
+    c_obj = con.cursor()
     # create table if does not exist
     sql_query =  "CREATE TABLE IF NOT EXISTS " \
                  "ec2(id INTEGER PRIMARY KEY, instanceType TEXT, vcpu REAL, memory REAL, " \
                  "os TEXT, price REAL, region TEXT, add_date DATE)"
-    cObj.execute(sql_query)
+    c_obj.execute(sql_query)
     con.commit()
-    cObj.close()
+    c_obj.close()
     con.close()
