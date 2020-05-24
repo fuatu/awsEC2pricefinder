@@ -88,3 +88,7 @@ Regions:
 - termType: OnDemand
 - licenseModel: No License 
 - requiredcapacitystatus: Used
+
+## SonarQube Analysis
+Check here for the analysis
+https://sonarcloud.io/dashboard?id=fuatu_awsEC2pricefinder

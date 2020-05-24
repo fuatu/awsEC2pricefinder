@@ -33,7 +33,9 @@ jobs:
       uses: SonarSource/sonarcloud-github-action@v1.2
       with:
         # Set the sonar.projectBaseDir analysis property
-        projectBaseDir: . # optional, default is . 
+        projectBaseDir: . # optional, default is .
+        # Disabling shallow clone is recommended for improving relevancy of reporting
+        fetch-depth: 0
       env:  
         SONAR_TOKEN: ${{ secrets.sonar_qube }}
         GITHUB_TOKEN: ${{ secrets.mygithub_token }}
