@@ -62,13 +62,14 @@ class FirstFrame(tk.Frame):
         self.white_black_input = 'F1.TEntry'
         self.white_black_spin = 'F1.TSpinbox'
         lato12 = "Lato 12"
+        bold = "bold"
         style = ttk.Style(self)
         style.theme_use('classic')
         style.configure(self.white_black, background='white',
                         font=lato12, padding="5", width="8",
                         borderwidth="2", bordercolor="black", relief="groove")
         style.configure(self.black_white, background='black', foreground="white",
-                        font=lato12 + " bold", padding="5", width="8",
+                        font=lato12 + " " + bold, padding="5", width="8",
                         borderwidth="2", bordercolor="white", relief="groove")
         style.configure(self.white_green, background='white', foreground="green",
                         font=lato12, padding="5", width="8",
@@ -76,9 +77,9 @@ class FirstFrame(tk.Frame):
         style.configure(self.white_red, background='white', foreground="red",
                         font=lato12, padding="5", width="8",
                         borderwidth="2", bordercolor="black", relief="groove")
-        style.configure(self.white_black_btn, background='white',font="Lato 12 bold")
-        style.configure(self.white_black_input, foreground = "black", font="Lato 12 bold")
-        style.configure(self.white_black_spin, foreground="black", background="white",font="Lato 12 bold")
+        style.configure(self.white_black_btn, background='white',font=lato12 + " " + bold)
+        style.configure(self.white_black_input, foreground = "black", font=lato12 + " " + bold)
+        style.configure(self.white_black_spin, foreground="black", background="white",font=lato12 + " " + bold)
         self.input_ram = tk.DoubleVar()
         self.input_cpu = tk.DoubleVar()
         self.input_region = tk.StringVar()
