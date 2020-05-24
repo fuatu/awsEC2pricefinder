@@ -21,6 +21,8 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
+        # Disabling shallow clone is recommended for improving relevancy of reporting
+        fetch-depth: 0
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
@@ -34,9 +36,7 @@ jobs:
       with:
         # Set the sonar.projectBaseDir analysis property
         projectBaseDir: . # optional, default is .
-        # Disabling shallow clone is recommended for improving relevancy of reporting
-        fetch-depth: 0
-      env:  
+      env:
         SONAR_TOKEN: ${{ secrets.sonar_qube }}
         GITHUB_TOKEN: ${{ secrets.mygithub_token }}
           
