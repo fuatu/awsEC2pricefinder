@@ -5,7 +5,8 @@ from collections import defaultdict
 
 PAR_VCPU = 2
 P_RAM = 4
-P_REGION = 'US East (N. Virginia)'
+REGION_NVIRGINIA = 'US East (N. Virginia)'
+P_REGION = REGION_NVIRGINIA
 P_OS = 'Linux'
 DB_NAME = 'awsprices.db'
 
@@ -42,8 +43,8 @@ help_text = "Here are the default filter conditions:\n\n" + \
             "capacitystatus: Used"
 
 list_regions = [
-            'US East (N. Virginia)',
-            'US East (N. Virginia)',
+            REGION_NVIRGINIA,
+            REGION_NVIRGINIA,
             'EU (Ireland)',
             'Asia Pacific (Hong Kong)',
             'Asia Pacific (Mumbai)',
@@ -190,7 +191,7 @@ def get_ec2_pricing(region=P_REGION):
                 {'Type': 'TERM_MATCH', 'Field': 'capacitystatus', 'Value': 'Used'}
             ],
             NextToken=next_token
-            # MaxResults=100
+            # use MaxResults=100 for limiting the results if needed
         )
         try:
             next_token = response['NextToken']
