@@ -129,10 +129,10 @@ def print_help():
 def read_yaml(filename=None):
     import yaml
 
-    stream = open(filename, 'r')
     try:
+        stream = open(filename, 'r')
         file_details = yaml.safe_load(stream)
-    except yaml.YAMLError:
+    except (yaml.YAMLError, FileNotFoundError):
         print("Not yaml file...")
         return None
     return file_details
