@@ -40,4 +40,9 @@ jobs:
       env:
         SONAR_TOKEN: ${{ secrets.sonar_qube }}
         GITHUB_TOKEN: ${{ secrets.mygithub_token }}
+    - name: Python Code Quality and Lint
+      uses: ricardochaves/python-lint@v1.1.0
+      with:
+        # A list of all paths to test
+        python-root-list: # optional, default is .
           
