@@ -148,31 +148,60 @@ class FirstFrame(tk.Frame):
 if len(sys.argv) > 1:
     if sys.argv[1] == '-t':
         text_only=True
-    if sys.argv[1] == '-h':
+    elif sys.argv[1] == '-h':
         print_help()
+    else:
+        print('incorrect parameter check help with -h')
+        sys.exit()
 else:
     text_only = False
 
+pvcpu = ""
 if len(sys.argv) > 2:
-    pvcpu = float(sys.argv[2])
+    try:
+        pvcpu = float(sys.argv[2])
+    except ValueError:
+        print('Please use an integer or floating number')
+        sys.exit()
 
+pram = ""
 if len(sys.argv) > 3:
-    pram = float(sys.argv[3])
+    try:
+        pram = float(sys.argv[3])
+    except ValueError:
+        print('Please use an integer or floating number')
+        sys.exit()
 
+pos = ""
 if len(sys.argv) > 4:
     pos = sys.argv[4]
+    if not pos in list_os:
+        print("Enter one of the values for os:", list_os )
+        sys.exit()
 
+pregion = ""
 if len(sys.argv) > 5:
     pregion = sys.argv[5]
+    if not pregion in list_regions:
+        print("Enter one of the values for regions. Check help with -h")
+        sys.exit()
 
+if not pvcpu:
+    pvcpu = PAR_VCPU
+if not pram:
+    pram = P_RAM
+if not pos:
+    pos = P_OS
+if not pregion:
+    pregion =  P_REGION
 
 if text_only:
     limit = 6
-    result = find_ec2(cpu=PAR_VCPU, ram=P_RAM, os=P_OS, region=P_REGION, limit=6)
+    result = find_ec2(cpu=pvcpu, ram=pram, os=pos, region=pregion, limit=6)
     txt_message = Style.RESET_ALL + "--------------------------\n" + \
                   Fore.GREEN + " vCPU: {0:.2f}\n RAM: {1:.2f}\n OS: {2}\n Region: {3}\n" + \
                   Style.RESET_ALL + "--------------------------"
-    print(Fore.GREEN + txt_message.format(PAR_VCPU, P_RAM, P_OS, P_REGION))
+    print(Fore.GREEN + txt_message.format(pvcpu, pram, pos, pregion))
     txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<11} {6:<8} {7:<10} {8}" \
                   .format("Instance", "vCPU", "RAM", "OS", "PriceH", "PriceM", "SpotH", "SpotM", "KillRate")
     print(Fore.LIGHTGREEN_EX + txt_header)
