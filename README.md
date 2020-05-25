@@ -91,3 +91,6 @@ Regions:
 
 ## SonarQube Analysis
 [![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=fuatu_awsEC2pricefinder)](https://sonarcloud.io/dashboard?id=fuatu_awsEC2pricefinder)
+
+## CI build
+![Build CI](https://github.com/fuatu/awsEC2pricefinder/workflows/Build%20CI/badge.svg)
