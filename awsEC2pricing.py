@@ -144,17 +144,16 @@ class FirstFrame(tk.Frame):
                             .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, spotprice_hourly, spotprice_monthly, kill_rate))
 
 
-
+text_only = False
 if len(sys.argv) > 1:
     if sys.argv[1] == '-t':
         text_only=True
     elif sys.argv[1] == '-h':
         print_help()
+        sys.exit()
     else:
         print('incorrect parameter check help with -h')
         sys.exit()
-else:
-    text_only = False
 
 pvcpu = ""
 if len(sys.argv) > 2:

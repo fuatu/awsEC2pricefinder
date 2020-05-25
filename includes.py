@@ -123,7 +123,7 @@ def print_help():
     print(Fore.GREEN + "Regions:")
     print(REGIONS)
     print(Style.RESET_ALL + "----------------------------------")
-    exit()
+    return True
 
 
 def read_yaml(filename=None):
