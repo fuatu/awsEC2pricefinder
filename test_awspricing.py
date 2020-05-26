@@ -14,7 +14,6 @@ def test_read_yaml():
     assert read_yaml(filename) is None
 
 def test_get_sys_argv():
-    breakpoint()
     text_only, pvcpu, pram, pos, pregion = get_sys_argv()
     assert not text_only is None
     assert not pvcpu is None
