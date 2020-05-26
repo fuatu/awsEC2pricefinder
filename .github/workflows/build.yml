@@ -29,6 +29,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         printf 'credentials:\n   access_key: ${{ secrets.aws_access_key }}\n   secret_key: ${{ secrets.aws_secret_key }}\n   default_region: us-east-1\n' > credentials.yaml
+        pylint -f parseable -d I0011,R0801 ./*.py | tee pylint.log
     - name: Run Tests
       run: |
         python awsEC2pricing.py -t
