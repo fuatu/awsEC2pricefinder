@@ -33,6 +33,7 @@ jobs:
       run: |
         python awsEC2pricing.py -t
         pytest --cov=./ --cov-report xml:coverage.xml
+        pylint ./*.py -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > pylint.log || exit 0
     - name: SonarCloud Scan
       uses: SonarSource/sonarcloud-github-action@v1.2
       with:

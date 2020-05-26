@@ -145,8 +145,9 @@ class FirstFrame(tk.Frame):
             spotprice_monthly = spotprice_hourly*24*30
             kill_rate = spot_interrupt_rates[rr[1]]
             self.results.insert(tk.END,
-                            "{0: <15} {1:<6.2f} {2:<6.2f} {3: <10} {4:.5f}  {5:<10.5f}  {6:.5f}  {7:<10.5f} {8:<3}\n" \
-                            .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, spotprice_hourly, spotprice_monthly, kill_rate))
+                "{0: <15} {1:<6.2f} {2:<6.2f} {3: <10} {4:.5f}  {5:<10.5f}  {6:.5f}  {7:<10.5f} {8:<3}\n" \
+                .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, \
+                spotprice_hourly, spotprice_monthly, kill_rate))
 
 
 def get_sys_argv(pp_args = []):
