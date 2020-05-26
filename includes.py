@@ -43,36 +43,36 @@ help_text = "Here are the default filter conditions:\n\n" + \
             "capacitystatus: Used"
 
 list_regions = [
-            REGION_NVIRGINIA,
-            REGION_NVIRGINIA,
-            'EU (Ireland)',
-            'Asia Pacific (Hong Kong)',
-            'Asia Pacific (Mumbai)',
-            'Asia Pacific (Osaka - Local)',
-            'Asia Pacific (Seoul)',
-            'Asia Pacific (Singapore)',
-            'Asia Pacific (Sydney)',
-            'Asia Pacific (Tokyo)',
-            'Canada(Central)',
-            'EU (Frankfurt)',
-            'EU (London)',
-            'EU (Paris)',
-            'EU (Stockholm)',
-            'Middle East (Bahrain)',
-            'South America (Sao Paulo)',
-            'US East (Ohio)',
-            'US West (Los Angeles)',
-            'US West (N. California)',
-            'US West (Oregon)'
-        ]
+    REGION_NVIRGINIA,
+    REGION_NVIRGINIA,
+    'EU (Ireland)',
+    'Asia Pacific (Hong Kong)',
+    'Asia Pacific (Mumbai)',
+    'Asia Pacific (Osaka - Local)',
+    'Asia Pacific (Seoul)',
+    'Asia Pacific (Singapore)',
+    'Asia Pacific (Sydney)',
+    'Asia Pacific (Tokyo)',
+    'Canada(Central)',
+    'EU (Frankfurt)',
+    'EU (London)',
+    'EU (Paris)',
+    'EU (Stockholm)',
+    'Middle East (Bahrain)',
+    'South America (Sao Paulo)',
+    'US East (Ohio)',
+    'US West (Los Angeles)',
+    'US West (N. California)',
+    'US West (Oregon)'
+]
 
 list_os = [
-            'Linux',
-            'Linux',
-            'RHEL',
-            'SUSE',
-            'Windows',
-        ]
+    'Linux',
+    'Linux',
+    'RHEL',
+    'SUSE',
+    'Windows',
+]
 
 os_map = {
     'Linux': 'Linux/UNIX (Amazon VPC)',
