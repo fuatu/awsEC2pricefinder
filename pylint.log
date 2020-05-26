@@ -1,0 +1,204 @@
+************* Module awsEC2pricing
+awsEC2pricing.py:80: [C0326(bad-whitespace), ] Exactly one space required after comma
+        style.configure(self.white_black_btn, background='white',font=lato12 + " " + bold)
+                                                                ^
+awsEC2pricing.py:81: [C0326(bad-whitespace), ] No space allowed around keyword argument assignment
+        style.configure(self.white_black_input, foreground = "black", font=lato12 + " " + bold)
+                                                           ^
+awsEC2pricing.py:82: [C0301(line-too-long), ] Line too long (111/100)
+awsEC2pricing.py:82: [C0326(bad-whitespace), ] Exactly one space required after comma
+        style.configure(self.white_black_spin, foreground="black", background="white",font=lato12 + " " + bold)
+                                                                                     ^
+awsEC2pricing.py:100: [C0326(bad-whitespace), ] Exactly one space required after comma
+        lbl_ram.grid(padx=5,row=1, column=0, sticky=tk.W)
+                           ^
+awsEC2pricing.py:122: [C0326(bad-whitespace), ] Exactly one space required around assignment
+        limit=6
+             ^
+awsEC2pricing.py:132: [C0301(line-too-long), ] Line too long (111/100)
+awsEC2pricing.py:136: [C0301(line-too-long), ] Line too long (108/100)
+awsEC2pricing.py:137: [C0326(bad-whitespace), ] Exactly one space required after comma
+        self.results.insert(tk.END,txt_header + "\n", "header")
+                                  ^
+awsEC2pricing.py:143: [C0330(bad-continuation), ] Wrong continued indentation (add 4 spaces).
+                            "{0: <15} {1:<6.2f} {2:<6.2f} {3: <10} {4:.5f}  {5:<10.5f}  {6:.5f}  {7:<10.5f} {8:<3}\n" \
+                            ^   |
+awsEC2pricing.py:143: [C0301(line-too-long), ] Line too long (119/100)
+awsEC2pricing.py:144: [C0301(line-too-long), ] Line too long (136/100)
+awsEC2pricing.py:147: [C0326(bad-whitespace), ] No space allowed around keyword argument assignment
+def get_sys_argv(pp_args = []):
+                         ^
+awsEC2pricing.py:155: [C0326(bad-whitespace), ] Exactly one space required around assignment
+            text_only=True
+                     ^
+awsEC2pricing.py:183: [C0326(bad-whitespace), ] No space allowed before bracket
+            print("Enter one of the values for os:", list_os )
+                                                             ^
+awsEC2pricing.py:200: [C0326(bad-whitespace), ] Exactly one space required after assignment
+        pregion =  P_REGION
+                ^
+awsEC2pricing.py:219: [C0301(line-too-long), ] Line too long (112/100)
+awsEC2pricing.py:223: [C0301(line-too-long), ] Line too long (115/100)
+awsEC2pricing.py:228: [C0301(line-too-long), ] Line too long (118/100)
+awsEC2pricing.py:229: [C0330(bad-continuation), ] Wrong continued indentation (remove 14 spaces).
+                                .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, spotprice_hourly, spotprice_monthly, kill_rate))
+                  |             ^
+awsEC2pricing.py:229: [C0301(line-too-long), ] Line too long (140/100)
+awsEC2pricing.py:241: [C0305(trailing-newlines), ] Trailing newlines
+awsEC2pricing.py:1: [C0103(invalid-name), ] Module name "awsEC2pricing" doesn't conform to snake_case naming style
+awsEC2pricing.py:1: [C0114(missing-module-docstring), ] Missing module docstring
+awsEC2pricing.py:5: [W0401(wildcard-import), ] Wildcard import includes
+awsEC2pricing.py:16: [C0103(invalid-name), MyApplication.__init__] Attribute name "fr" doesn't conform to snake_case naming style
+awsEC2pricing.py:10: [C0115(missing-class-docstring), MyApplication] Missing class docstring
+awsEC2pricing.py:24: [C0115(missing-class-docstring), MyMenu] Missing class docstring
+awsEC2pricing.py:24: [R0901(too-many-ancestors), MyMenu] Too many ancestors (8/7)
+awsEC2pricing.py:38: [C0116(missing-function-docstring), MyMenu.conditions] Missing function or method docstring
+awsEC2pricing.py:39: [C0415(import-outside-toplevel), MyMenu.conditions] Import outside toplevel (tkinter.messagebox)
+awsEC2pricing.py:38: [R0201(no-self-use), MyMenu.conditions] Method could be a function
+awsEC2pricing.py:42: [C0116(missing-function-docstring), MyMenu.about] Missing function or method docstring
+awsEC2pricing.py:43: [C0415(import-outside-toplevel), MyMenu.about] Import outside toplevel (tkinter.messagebox)
+awsEC2pricing.py:42: [R0201(no-self-use), MyMenu.about] Method could be a function
+awsEC2pricing.py:46: [C0116(missing-function-docstring), MyMenu.exit_app] Missing function or method docstring
+awsEC2pricing.py:55: [C0103(invalid-name), FirstFrame.__init__] Attribute name "os" doesn't conform to snake_case naming style
+awsEC2pricing.py:50: [C0115(missing-class-docstring), FirstFrame] Missing class docstring
+awsEC2pricing.py:50: [R0901(too-many-ancestors), FirstFrame] Too many ancestors (8/7)
+awsEC2pricing.py:50: [R0902(too-many-instance-attributes), FirstFrame] Too many instance attributes (14/7)
+awsEC2pricing.py:91: [C0116(missing-function-docstring), FirstFrame.ec2_details] Missing function or method docstring
+awsEC2pricing.py:121: [C0116(missing-function-docstring), FirstFrame.find_ec2s] Missing function or method docstring
+awsEC2pricing.py:121: [R0914(too-many-locals), FirstFrame.find_ec2s] Too many local variables (16/15)
+awsEC2pricing.py:125: [C0103(invalid-name), FirstFrame.find_ec2s] Variable name "os" doesn't conform to snake_case naming style
+awsEC2pricing.py:138: [C0103(invalid-name), FirstFrame.find_ec2s] Variable name "rr" doesn't conform to snake_case naming style
+awsEC2pricing.py:147: [W0102(dangerous-default-value), get_sys_argv] Dangerous default value [] as argument
+awsEC2pricing.py:147: [C0116(missing-function-docstring), get_sys_argv] Missing function or method docstring
+awsEC2pricing.py:147: [R0911(too-many-return-statements), get_sys_argv] Too many return statements (7/6)
+awsEC2pricing.py:147: [R0912(too-many-branches), get_sys_argv] Too many branches (17/12)
+awsEC2pricing.py:205: [C0116(missing-function-docstring), main] Missing function or method docstring
+awsEC2pricing.py:205: [R0914(too-many-locals), main] Too many local variables (19/15)
+awsEC2pricing.py:224: [C0103(invalid-name), main] Variable name "rr" doesn't conform to snake_case naming style
+awsEC2pricing.py:205: [R1710(inconsistent-return-statements), main] Either all return statements in a function should return an expression, or none of them should.
+awsEC2pricing.py:212: [W0612(unused-variable), main] Unused variable 'limit'
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import json from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import sqlite3 from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import REGION_NVIRGINIA from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import DB_NAME from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import AVAILABILITY_ZONE from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import REGIONS from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import os_map from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import read_yaml from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import pricing_boto from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import get_ec2_pricing from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import are_records_old from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import delete_records from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import insert_records from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import print_services from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import ec2_attributes from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import print_prices_from_db from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import get_ec2_ondemand_price from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import create_db from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import date from wildcard import
+awsEC2pricing.py:5: [W0614(unused-wildcard-import), ] Unused import defaultdict from wildcard import
+awsEC2pricing.py:6: [C0411(wrong-import-order), ] standard import "import tkinter as tk" should be placed before "from colorama import Fore, Style"
+awsEC2pricing.py:7: [C0411(wrong-import-order), ] standard import "from tkinter import ttk" should be placed before "from colorama import Fore, Style"
+************* Module includes
+includes.py:111: [C0301(line-too-long), ] Line too long (108/100)
+includes.py:119: [C0301(line-too-long), ] Line too long (111/100)
+includes.py:161: [C0301(line-too-long), ] Line too long (120/100)
+includes.py:252: [C0301(line-too-long), ] Line too long (119/100)
+includes.py:296: [C0301(line-too-long), ] Line too long (115/100)
+includes.py:307: [C0326(bad-whitespace), ] Exactly one space required after comma
+        except (IndexError,KeyError) as _:
+                          ^
+includes.py:319: [C0326(bad-whitespace), ] Exactly one space required after comma
+        except (IndexError,KeyError) as _:
+                          ^
+includes.py:345: [C0326(bad-whitespace), ] Exactly one space required after comma
+        except (IndexError,KeyError):
+                          ^
+includes.py:353: [C0326(bad-whitespace), ] Exactly one space required after assignment
+    sql_query =  "CREATE TABLE IF NOT EXISTS " \
+              ^
+includes.py:359: [C0304(missing-final-newline), ] Final newline missing
+includes.py:1: [C0114(missing-module-docstring), ] Missing module docstring
+includes.py:37: [C0103(invalid-name), ] Constant name "help_text" doesn't conform to UPPER_CASE naming style
+includes.py:108: [C0116(missing-function-docstring), print_help] Missing function or method docstring
+includes.py:109: [C0415(import-outside-toplevel), print_help] Import outside toplevel (colorama.Fore, colorama.Style)
+includes.py:129: [C0116(missing-function-docstring), read_yaml] Missing function or method docstring
+includes.py:130: [C0415(import-outside-toplevel), read_yaml] Import outside toplevel (yaml)
+includes.py:141: [C0116(missing-function-docstring), pricing_boto] Missing function or method docstring
+includes.py:142: [C0415(import-outside-toplevel), pricing_boto] Import outside toplevel (boto3)
+includes.py:157: [C0103(invalid-name), find_ec2] Argument name "os" doesn't conform to snake_case naming style
+includes.py:157: [C0116(missing-function-docstring), find_ec2] Missing function or method docstring
+includes.py:169: [C0116(missing-function-docstring), get_ec2_pricing] Missing function or method docstring
+includes.py:169: [R0914(too-many-locals), get_ec2_pricing] Too many local variables (17/15)
+includes.py:211: [C0103(invalid-name), get_ec2_pricing] Variable name "os" doesn't conform to snake_case naming style
+includes.py:177: [W0612(unused-variable), get_ec2_pricing] Unused variable 'ec2s'
+includes.py:217: [C0116(missing-function-docstring), are_records_old] Missing function or method docstring
+includes.py:238: [C0116(missing-function-docstring), delete_records] Missing function or method docstring
+includes.py:247: [C0103(invalid-name), insert_records] Argument name "rc" doesn't conform to snake_case naming style
+includes.py:247: [C0116(missing-function-docstring), insert_records] Missing function or method docstring
+includes.py:250: [C0103(invalid-name), insert_records] Variable name "rr" doesn't conform to snake_case naming style
+includes.py:257: [C0116(missing-function-docstring), print_services] Missing function or method docstring
+includes.py:258: [W0612(unused-variable), print_services] Unused variable 'ec2s'
+includes.py:266: [C0116(missing-function-docstring), ec2_attributes] Missing function or method docstring
+includes.py:267: [W0612(unused-variable), ec2_attributes] Unused variable 'ec2s'
+includes.py:283: [C0116(missing-function-docstring), print_prices_from_db] Missing function or method docstring
+includes.py:295: [C0103(invalid-name), print_prices_from_db] Variable name "rr" doesn't conform to snake_case naming style
+includes.py:299: [W0102(dangerous-default-value), get_ec2_ondemand_price] Dangerous default value [] as argument
+includes.py:299: [C0103(invalid-name), get_ec2_ondemand_price] Argument name "os" doesn't conform to snake_case naming style
+includes.py:299: [C0116(missing-function-docstring), get_ec2_ondemand_price] Missing function or method docstring
+includes.py:302: [C0103(invalid-name), get_ec2_ondemand_price] Variable name "ii" doesn't conform to snake_case naming style
+includes.py:300: [W0612(unused-variable), get_ec2_ondemand_price] Unused variable 'pricing'
+includes.py:311: [W0102(dangerous-default-value), get_ec2_spot_price] Dangerous default value [] as argument
+includes.py:311: [C0103(invalid-name), get_ec2_spot_price] Argument name "os" doesn't conform to snake_case naming style
+includes.py:311: [C0116(missing-function-docstring), get_ec2_spot_price] Missing function or method docstring
+includes.py:314: [C0103(invalid-name), get_ec2_spot_price] Variable name "ii" doesn't conform to snake_case naming style
+includes.py:312: [W0612(unused-variable), get_ec2_spot_price] Unused variable 'pricing'
+includes.py:326: [W0621(redefined-outer-name), get_ec2_spot_interruption] Redefining name 'json' from outer scope (line 1)
+includes.py:324: [W0102(dangerous-default-value), get_ec2_spot_interruption] Dangerous default value [] as argument
+includes.py:324: [C0103(invalid-name), get_ec2_spot_interruption] Argument name "os" doesn't conform to snake_case naming style
+includes.py:324: [C0116(missing-function-docstring), get_ec2_spot_interruption] Missing function or method docstring
+includes.py:325: [C0415(import-outside-toplevel), get_ec2_spot_interruption] Import outside toplevel (requests)
+includes.py:326: [W0404(reimported), get_ec2_spot_interruption] Reimport 'json' (imported line 1)
+includes.py:326: [C0415(import-outside-toplevel), get_ec2_spot_interruption] Import outside toplevel (json)
+includes.py:341: [C0103(invalid-name), get_ec2_spot_interruption] Variable name "ii" doesn't conform to snake_case naming style
+includes.py:324: [R1710(inconsistent-return-statements), get_ec2_spot_interruption] Either all return statements in a function should return an expression, or none of them should.
+includes.py:349: [C0116(missing-function-docstring), create_db] Missing function or method docstring
+************* Module test_awspricing
+test_awspricing.py:27: [C0301(line-too-long), ] Line too long (109/100)
+test_awspricing.py:27: [C0326(bad-whitespace), ] Exactly one space required after comma
+    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(['','-t','8','16','Linux',REGION_NVIRGINIA])
+                                                                    ^
+test_awspricing.py:27: [C0326(bad-whitespace), ] Exactly one space required after comma
+    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(['','-t','8','16','Linux',REGION_NVIRGINIA])
+                                                                         ^
+test_awspricing.py:27: [C0326(bad-whitespace), ] Exactly one space required after comma
+    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(['','-t','8','16','Linux',REGION_NVIRGINIA])
+                                                                             ^
+test_awspricing.py:27: [C0326(bad-whitespace), ] Exactly one space required after comma
+    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(['','-t','8','16','Linux',REGION_NVIRGINIA])
+                                                                                  ^
+test_awspricing.py:27: [C0326(bad-whitespace), ] Exactly one space required after comma
+    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(['','-t','8','16','Linux',REGION_NVIRGINIA])
+                                                                                          ^
+test_awspricing.py:59: [C0304(missing-final-newline), ] Final newline missing
+test_awspricing.py:1: [C0114(missing-module-docstring), ] Missing module docstring
+test_awspricing.py:7: [C0116(missing-function-docstring), test_print_help] Missing function or method docstring
+test_awspricing.py:10: [C0116(missing-function-docstring), test_read_yaml] Missing function or method docstring
+test_awspricing.py:18: [C0116(missing-function-docstring), test_get_sys_argv_positive] Missing function or method docstring
+test_awspricing.py:35: [C0116(missing-function-docstring), test_get_sys_argv_help] Missing function or method docstring
+test_awspricing.py:37: [W0612(unused-variable), test_get_sys_argv_help] Unused variable 'text_only'
+test_awspricing.py:37: [W0612(unused-variable), test_get_sys_argv_help] Unused variable 'pvcpu'
+test_awspricing.py:37: [W0612(unused-variable), test_get_sys_argv_help] Unused variable 'pram'
+test_awspricing.py:37: [W0612(unused-variable), test_get_sys_argv_help] Unused variable 'pos'
+test_awspricing.py:37: [W0612(unused-variable), test_get_sys_argv_help] Unused variable 'pregion'
+test_awspricing.py:41: [C0116(missing-function-docstring), test_get_sys_argv_negative] Missing function or method docstring
+test_awspricing.py:43: [W0612(unused-variable), test_get_sys_argv_negative] Unused variable 'text_only'
+test_awspricing.py:43: [W0612(unused-variable), test_get_sys_argv_negative] Unused variable 'pvcpu'
+test_awspricing.py:43: [W0612(unused-variable), test_get_sys_argv_negative] Unused variable 'pram'
+test_awspricing.py:43: [W0612(unused-variable), test_get_sys_argv_negative] Unused variable 'pos'
+test_awspricing.py:43: [W0612(unused-variable), test_get_sys_argv_negative] Unused variable 'pregion'
+test_awspricing.py:58: [C0116(missing-function-docstring), test_main] Missing function or method docstring
+
+------------------------------------------------------------------
+Your code has been rated at 6.40/10 (previous run: 6.40/10, +0.00)
+
