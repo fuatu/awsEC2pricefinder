@@ -37,5 +37,23 @@ def test_get_sys_argv_help():
     success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(['', '-h'])
     assert not success
 
+
+def test_get_sys_argv_negative():
+    # test incorrect parameter
+    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(['', '-x'])
+    assert not success
+    # test incorrect cpu
+    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(['', '-t', 'x'])
+    assert not success
+    # test incorrect ram
+    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(['', '-t', '4', 'x'])
+    assert not success
+    # test incorrect os
+    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(['', '-t', '4', '8', 'x'])
+    assert not success
+    # test incorrect region
+    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(['', '-t', '4', '8', 'Linux', 'x'])
+    assert not success
+
 def test_main():
     assert main(testing=True)
