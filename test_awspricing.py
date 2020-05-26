@@ -15,20 +15,27 @@ def test_read_yaml():
     filename = 'credentialsx.yaml'
     assert read_yaml(filename) is None
 
-def test_get_sys_argv():
-    text_only, pvcpu, pram, pos, pregion = get_sys_argv()
+def test_get_sys_argv_positive():
+    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv()
+    assert success
     assert not text_only is None
     assert not pvcpu is None
     assert not pram is None
     assert not pos is None
     assert not pregion is None
     # test with parameters
-    text_only, pvcpu, pram, pos, pregion = get_sys_argv(['','-t','8','16','Linux',REGION_NVIRGINIA])
+    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(['','-t','8','16','Linux',REGION_NVIRGINIA])
+    assert success
     assert not text_only is None
     assert not pvcpu is None
     assert not pram is None
     assert not pos is None
     assert not pregion is None
+
+def test_get_sys_argv_help():
+    # test help
+    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(['', '-h'])
+    assert not success
 
 def test_main():
     assert main(testing=True)

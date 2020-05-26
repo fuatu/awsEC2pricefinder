@@ -155,10 +155,10 @@ def get_sys_argv(pp_args = []):
             text_only=True
         elif p_args[1] == '-h':
             print_help()
-            sys.exit()
+            return False, '', '', '', '', ''
         else:
             print('incorrect parameter check help with -h')
-            sys.exit()
+            return False, '', '', '', '', ''
 
     pvcpu = ""
     if len(p_args) > 2:
@@ -166,7 +166,7 @@ def get_sys_argv(pp_args = []):
             pvcpu = float(p_args[2])
         except ValueError:
             print('Please use an integer or floating number')
-            sys.exit()
+            return False, '', '', '', '', ''
 
     pram = ""
     if len(p_args) > 3:
@@ -174,21 +174,21 @@ def get_sys_argv(pp_args = []):
             pram = float(p_args[3])
         except ValueError:
             print('Please use an integer or floating number')
-            sys.exit()
+            return False, '', '', '', '', ''
 
     pos = ""
     if len(p_args) > 4:
         pos = p_args[4]
         if not pos in list_os:
             print("Enter one of the values for os:", list_os )
-            sys.exit()
+            return False, '', '', '', '', ''
 
     pregion = ""
     if len(p_args) > 5:
         pregion = p_args[5]
         if not pregion in list_regions:
             print("Enter one of the values for regions. Check help with -h")
-            sys.exit()
+            return False, '', '', '', '', ''
 
     if not pvcpu:
         pvcpu = PAR_VCPU
@@ -199,11 +199,13 @@ def get_sys_argv(pp_args = []):
     if not pregion:
         pregion =  P_REGION
 
-    return text_only, pvcpu, pram, pos, pregion
+    return True, text_only, pvcpu, pram, pos, pregion
 
 
 def main(testing=False):
-    text_only, pvcpu, pram, pos, pregion = get_sys_argv()
+    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv()
+    if not success:
+        sys.exit()
     if testing:
         text_only = True
     if text_only:
