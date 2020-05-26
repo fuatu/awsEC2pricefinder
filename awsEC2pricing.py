@@ -201,9 +201,11 @@ def get_sys_argv(pp_args = []):
 
     return text_only, pvcpu, pram, pos, pregion
 
-text_only, pvcpu, pram, pos, pregion  = get_sys_argv()
 
-if __name__ == '__main__':
+def main(testing=False):
+    text_only, pvcpu, pram, pos, pregion = get_sys_argv()
+    if testing:
+        text_only = True
     if text_only:
         limit = 6
         result = find_ec2(cpu=pvcpu, ram=pram, os=pos, region=pregion, limit=6)
@@ -224,8 +226,14 @@ if __name__ == '__main__':
             print(Fore.GREEN + "{0: <15} {1:<6.2f} {2:<6.2f} {3: <10} {4:.5f}  {5:<10.5f}  {6:.5f}  {7:<10.5f} {8:<3}"
                                 .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, spotprice_hourly, spotprice_monthly, kill_rate))
         print(Style.RESET_ALL)
+        if testing:
+            return True
     else:
         myapp = MyApplication()
         myapp.mainloop()
+
+if __name__ == '__main__':
+    main()
+
 
 

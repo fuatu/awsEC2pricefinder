@@ -1,6 +1,7 @@
 from includes import print_help
 from includes import read_yaml
 from awsEC2pricing import get_sys_argv
+from awsEC2pricing import main
 
 def test_print_help():
     assert print_help()
@@ -20,3 +21,6 @@ def test_get_sys_argv():
     assert not pram is None
     assert not pos is None
     assert not pregion is None
+
+def test_main():
+    assert main(testing=True)
