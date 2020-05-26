@@ -1,3 +1,4 @@
+""" this module is a collection of functions used """
 import json
 import sqlite3
 from datetime import date

@@ -10,6 +10,7 @@ from tkinter import ttk
 
 
 class MyApplication(tk.Tk):
+    """ Class for tkinter user interface """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title("Find best pricing for AWS")
@@ -24,6 +25,7 @@ class MyApplication(tk.Tk):
 
 
 class MyMenu(tk.Menu):
+    """ Class for tkinter menu interface """
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
 
@@ -50,6 +52,7 @@ class MyMenu(tk.Menu):
 
 
 class FirstFrame(tk.Frame):
+    """ Class for tkinter frame interface """
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
 
@@ -152,15 +155,14 @@ def get_sys_argv(pp_args = []):
     if 'pytest' in sys.argv[0]:
         p_args = pp_args
     text_only = False
-    if len(p_args) > 1:
-        if p_args[1] == '-t':
-            text_only=True
-        elif p_args[1] == '-h':
-            print_help()
-            return False, '', '', '', '', ''
-        else:
-            print('incorrect parameter check help with -h')
-            return False, '', '', '', '', ''
+    if len(p_args) > 1 and p_args[1] == '-t':
+        text_only=True
+    elif len(p_args) > 1 and p_args[1] == '-h':
+        print_help()
+        return False, '', '', '', '', ''
+    elif len(p_args) > 1:
+        print('incorrect parameter check help with -h')
+        return False, '', '', '', '', ''
 
     pvcpu = ""
     if len(p_args) > 2:
