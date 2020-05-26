@@ -144,78 +144,88 @@ class FirstFrame(tk.Frame):
                             .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, spotprice_hourly, spotprice_monthly, kill_rate))
 
 
-text_only = False
-if len(sys.argv) > 1:
-    if sys.argv[1] == '-t':
-        text_only=True
-    elif sys.argv[1] == '-h':
-        print_help()
-        sys.exit()
+def get_sys_argv(pp_args = []):
+    p_args = sys.argv
+    # if pytest running do not use the parameters in sys.argv use parameter from function
+    if 'pytest' in sys.argv[0]:
+        p_args = pp_args
+    text_only = False
+    if len(p_args) > 1:
+        if p_args[1] == '-t':
+            text_only=True
+        elif p_args[1] == '-h':
+            print_help()
+            sys.exit()
+        else:
+            print('incorrect parameter check help with -h')
+            sys.exit()
+
+    pvcpu = ""
+    if len(p_args) > 2:
+        try:
+            pvcpu = float(p_args[2])
+        except ValueError:
+            print('Please use an integer or floating number')
+            sys.exit()
+
+    pram = ""
+    if len(p_args) > 3:
+        try:
+            pram = float(p_args[3])
+        except ValueError:
+            print('Please use an integer or floating number')
+            sys.exit()
+
+    pos = ""
+    if len(p_args) > 4:
+        pos = p_args[4]
+        if not pos in list_os:
+            print("Enter one of the values for os:", list_os )
+            sys.exit()
+
+    pregion = ""
+    if len(p_args) > 5:
+        pregion = p_args[5]
+        if not pregion in list_regions:
+            print("Enter one of the values for regions. Check help with -h")
+            sys.exit()
+
+    if not pvcpu:
+        pvcpu = PAR_VCPU
+    if not pram:
+        pram = P_RAM
+    if not pos:
+        pos = P_OS
+    if not pregion:
+        pregion =  P_REGION
+
+    return text_only, pvcpu, pram, pos, pregion
+
+text_only, pvcpu, pram, pos, pregion  = get_sys_argv()
+
+if __name__ == '__main__':
+    if text_only:
+        limit = 6
+        result = find_ec2(cpu=pvcpu, ram=pram, os=pos, region=pregion, limit=6)
+        txt_message = Style.RESET_ALL + "--------------------------\n" + \
+                      Fore.GREEN + " vCPU: {0:.2f}\n RAM: {1:.2f}\n OS: {2}\n Region: {3}\n" + \
+                      Style.RESET_ALL + "--------------------------"
+        print(Fore.GREEN + txt_message.format(pvcpu, pram, pos, pregion))
+        txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<11} {6:<8} {7:<10} {8}" \
+                      .format("Instance", "vCPU", "RAM", "OS", "PriceH", "PriceM", "SpotH", "SpotM", "KillRate")
+        print(Fore.LIGHTGREEN_EX + txt_header)
+        instances = [rr[1] for rr in result]
+        spot_prices = get_ec2_spot_price(instances=instances, os=P_OS, region=P_REGION)
+        spot_interrupt_rates = get_ec2_spot_interruption(instances=instances, os=P_OS, region=region_map[P_REGION])
+        for rr in result:
+            spotprice_hourly = spot_prices[rr[1]]
+            spotprice_monthly = spotprice_hourly * 24 * 30
+            kill_rate = spot_interrupt_rates[rr[1]]
+            print(Fore.GREEN + "{0: <15} {1:<6.2f} {2:<6.2f} {3: <10} {4:.5f}  {5:<10.5f}  {6:.5f}  {7:<10.5f} {8:<3}"
+                                .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, spotprice_hourly, spotprice_monthly, kill_rate))
+        print(Style.RESET_ALL)
     else:
-        print('incorrect parameter check help with -h')
-        sys.exit()
-
-pvcpu = ""
-if len(sys.argv) > 2:
-    try:
-        pvcpu = float(sys.argv[2])
-    except ValueError:
-        print('Please use an integer or floating number')
-        sys.exit()
-
-pram = ""
-if len(sys.argv) > 3:
-    try:
-        pram = float(sys.argv[3])
-    except ValueError:
-        print('Please use an integer or floating number')
-        sys.exit()
-
-pos = ""
-if len(sys.argv) > 4:
-    pos = sys.argv[4]
-    if not pos in list_os:
-        print("Enter one of the values for os:", list_os )
-        sys.exit()
-
-pregion = ""
-if len(sys.argv) > 5:
-    pregion = sys.argv[5]
-    if not pregion in list_regions:
-        print("Enter one of the values for regions. Check help with -h")
-        sys.exit()
-
-if not pvcpu:
-    pvcpu = PAR_VCPU
-if not pram:
-    pram = P_RAM
-if not pos:
-    pos = P_OS
-if not pregion:
-    pregion =  P_REGION
-
-if text_only:
-    limit = 6
-    result = find_ec2(cpu=pvcpu, ram=pram, os=pos, region=pregion, limit=6)
-    txt_message = Style.RESET_ALL + "--------------------------\n" + \
-                  Fore.GREEN + " vCPU: {0:.2f}\n RAM: {1:.2f}\n OS: {2}\n Region: {3}\n" + \
-                  Style.RESET_ALL + "--------------------------"
-    print(Fore.GREEN + txt_message.format(pvcpu, pram, pos, pregion))
-    txt_header = "{0:<15} {1:<6} {2:<6} {3:<10} {4:<8} {5:<11} {6:<8} {7:<10} {8}" \
-                  .format("Instance", "vCPU", "RAM", "OS", "PriceH", "PriceM", "SpotH", "SpotM", "KillRate")
-    print(Fore.LIGHTGREEN_EX + txt_header)
-    instances = [rr[1] for rr in result]
-    spot_prices = get_ec2_spot_price(instances=instances, os=P_OS, region=P_REGION)
-    spot_interrupt_rates = get_ec2_spot_interruption(instances=instances, os=P_OS, region=region_map[P_REGION])
-    for rr in result:
-        spotprice_hourly = spot_prices[rr[1]]
-        spotprice_monthly = spotprice_hourly * 24 * 30
-        kill_rate = spot_interrupt_rates[rr[1]]
-        print(Fore.GREEN + "{0: <15} {1:<6.2f} {2:<6.2f} {3: <10} {4:.5f}  {5:<10.5f}  {6:.5f}  {7:<10.5f} {8:<3}"
-                            .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, spotprice_hourly, spotprice_monthly, kill_rate))
-    print(Style.RESET_ALL)
-else:
-    myapp = MyApplication()
-    myapp.mainloop()
+        myapp = MyApplication()
+        myapp.mainloop()
 
 
