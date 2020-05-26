@@ -34,7 +34,7 @@ REGIONS = \
         US West (N. California)
         US West (Oregon)'''
 
-help_text = "Here are the default filter conditions:\n\n" + \
+HELP_TEXT = "Here are the default filter conditions:\n\n" + \
             "preInstalledSw: NA\n" + \
             "storage: EBS only\n" + \
             "productFamily: Compute Instance\n" + \

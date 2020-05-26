@@ -2,7 +2,9 @@
 
 import sys
 from colorama import Fore, Style
-from includes import *
+from includes import HELP_TEXT, list_regions, list_os, find_ec2, get_ec2_spot_price
+from includes import get_ec2_spot_interruption, print_help, region_map, PAR_VCPU
+from includes import P_RAM, P_OS, P_REGION
 import tkinter as tk
 from tkinter import ttk
 
@@ -37,7 +39,7 @@ class MyMenu(tk.Menu):
 
     def conditions(self):
         from tkinter import messagebox
-        messagebox.showinfo(title="About", message=help_text)
+        messagebox.showinfo(title="About", message=HELP_TEXT)
 
     def about(self):
         from tkinter import messagebox
@@ -209,7 +211,6 @@ def main(testing=False):
     if testing:
         text_only = True
     if text_only:
-        limit = 6
         result = find_ec2(cpu=pvcpu, ram=pram, os=pos, region=pregion, limit=6)
         txt_message = Style.RESET_ALL + "--------------------------\n" + \
                       Fore.GREEN + " vCPU: {0:.2f}\n RAM: {1:.2f}\n OS: {2}\n Region: {3}\n" + \
