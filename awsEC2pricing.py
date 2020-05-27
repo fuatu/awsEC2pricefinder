@@ -4,7 +4,7 @@ import sys
 from colorama import Fore, Style
 from includes import HELP_TEXT, list_regions, list_os, find_ec2, get_ec2_spot_price
 from includes import get_ec2_spot_interruption, print_help, region_map, PAR_VCPU
-from includes import P_RAM, P_OS, P_REGION
+from includes import P_RAM, P_OS, P_REGION, REGION_NVIRGINIA
 import tkinter as tk
 from tkinter import ttk
 
@@ -152,10 +152,7 @@ class FirstFrame(tk.Frame):
 
 def get_sys_argv(pp_args = []):
     """ function for collecting terminal args """
-    p_args = sys.argv
-    # if pytest running do not use the parameters in sys.argv use parameter from function
-    if 'pytest' in sys.argv[0]:
-        p_args = pp_args
+    p_args = pp_args
     text_only = False
     pvcpu = PAR_VCPU
     pram = P_RAM
@@ -201,11 +198,14 @@ def get_sys_argv(pp_args = []):
 
 def main(testing=False):
     """ main function """
-    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv()
-    if not success:
-        sys.exit()
     if testing:
         text_only = True
+        pp_args = ['','-t','8','16','Linux',REGION_NVIRGINIA]
+    else:
+        pp_args = sys.argv
+    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(pp_args)
+    if not success:
+        sys.exit()
     if text_only:
         result = find_ec2(cpu=pvcpu, ram=pram, os=pos, region=pregion, limit=6)
         txt_message = Style.RESET_ALL + "--------------------------\n" + \
@@ -223,7 +223,8 @@ def main(testing=False):
             spotprice_monthly = spotprice_hourly * 24 * 30
             kill_rate = spot_interrupt_rates[rr[1]]
             print(Fore.GREEN + "{0: <15} {1:<6.2f} {2:<6.2f} {3: <10} {4:.5f}  {5:<10.5f}  {6:.5f}  {7:<10.5f} {8:<3}"
-                                .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, spotprice_hourly, spotprice_monthly, kill_rate))
+                                .format(rr[1], rr[2], rr[3], rr[4], rr[5], rr[5] * 24 * 30, \
+                                spotprice_hourly, spotprice_monthly, kill_rate))
         print(Style.RESET_ALL)
         if testing:
             return True

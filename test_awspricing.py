@@ -16,13 +16,6 @@ def test_read_yaml():
     assert read_yaml(filename) is None
 
 def test_get_sys_argv_positive():
-    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv()
-    assert success
-    assert not text_only is None
-    assert not pvcpu is None
-    assert not pram is None
-    assert not pos is None
-    assert not pregion is None
     # test with parameters
     success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(['','-t','8','16','Linux',REGION_NVIRGINIA])
     assert success
