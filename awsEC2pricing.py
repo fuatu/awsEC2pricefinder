@@ -151,11 +151,16 @@ class FirstFrame(tk.Frame):
 
 
 def get_sys_argv(pp_args = []):
+    """ function for collecting terminal args """
     p_args = sys.argv
     # if pytest running do not use the parameters in sys.argv use parameter from function
     if 'pytest' in sys.argv[0]:
         p_args = pp_args
     text_only = False
+    pvcpu = PAR_VCPU
+    pram = P_RAM
+    pos = P_OS
+    pregion =  P_REGION
     if len(p_args) > 1 and p_args[1] == '-t':
         text_only=True
     elif len(p_args) > 1 and p_args[1] == '-h':
@@ -165,7 +170,6 @@ def get_sys_argv(pp_args = []):
         print('incorrect parameter check help with -h')
         return False, '', '', '', '', ''
 
-    pvcpu = ""
     if len(p_args) > 2:
         try:
             pvcpu = float(p_args[2])
@@ -173,7 +177,6 @@ def get_sys_argv(pp_args = []):
             print('Please use an integer or floating number')
             return False, '', '', '', '', ''
 
-    pram = ""
     if len(p_args) > 3:
         try:
             pram = float(p_args[3])
@@ -181,33 +184,23 @@ def get_sys_argv(pp_args = []):
             print('Please use an integer or floating number')
             return False, '', '', '', '', ''
 
-    pos = ""
     if len(p_args) > 4:
         pos = p_args[4]
         if not pos in list_os:
             print("Enter one of the values for os:", list_os )
             return False, '', '', '', '', ''
 
-    pregion = ""
     if len(p_args) > 5:
         pregion = p_args[5]
         if not pregion in list_regions:
             print("Enter one of the values for regions. Check help with -h")
             return False, '', '', '', '', ''
 
-    if not pvcpu:
-        pvcpu = PAR_VCPU
-    if not pram:
-        pram = P_RAM
-    if not pos:
-        pos = P_OS
-    if not pregion:
-        pregion =  P_REGION
-
     return True, text_only, pvcpu, pram, pos, pregion
 
 
 def main(testing=False):
+    """ main function """
     success, text_only, pvcpu, pram, pos, pregion = get_sys_argv()
     if not success:
         sys.exit()

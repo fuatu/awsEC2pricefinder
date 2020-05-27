@@ -1,4 +1,9 @@
-"""this module is a collection of functions used"""
+# encoding: utf-8
+# module sys
+"""
+this module is a collection of functions used
+in the main script
+"""
 import json
 import sqlite3
 from datetime import date
@@ -107,6 +112,7 @@ region_map = {
 }
 
 def print_help():
+    """ Print help in terminal """
     from colorama import Fore, Style
     print("----------------------------------")
     print(Fore.GREEN + "Sample command:\n$ python awsEC2pricing.py -t 1 16 Windows 'US East (N. Virginia)'")
@@ -128,6 +134,7 @@ def print_help():
 
 
 def read_yaml(filename=None):
+    """ read yaml file """
     import yaml
 
     try:
@@ -140,6 +147,7 @@ def read_yaml(filename=None):
 
 
 def pricing_boto(region=None):
+    """ boto pricing session create """
     import boto3
     filename = 'credentials.yaml'
     file_details = read_yaml(filename=filename)
@@ -156,6 +164,7 @@ def pricing_boto(region=None):
 
 
 def find_ec2(cpu=PAR_VCPU, ram=P_RAM, os='Linux', region=P_REGION, limit=6):
+    """ find ec2s from DB """
     get_ec2_pricing(region=region)
     con = sqlite3.connect(DB_NAME)
     cobj = con.cursor()
@@ -168,6 +177,7 @@ def find_ec2(cpu=PAR_VCPU, ram=P_RAM, os='Linux', region=P_REGION, limit=6):
 
 
 def get_ec2_pricing(region=P_REGION):
+    """ get ec2 pricing """
     if are_records_old(region=region):
         print("Getting price updates for EC2s")
         delete_records(region)
@@ -216,6 +226,7 @@ def get_ec2_pricing(region=P_REGION):
 
 
 def are_records_old(region=P_REGION):
+    """ check if db records are old """
     create_db()
     con = sqlite3.connect(DB_NAME)
     cobj = con.cursor()
@@ -237,6 +248,7 @@ def are_records_old(region=P_REGION):
 
 
 def delete_records(region: str):
+    """ delete records in db """
     con = sqlite3.connect(DB_NAME)
     cobj = con.cursor()
     cobj.execute("DELETE FROM ec2 WHERE region=?", (region,))
@@ -246,6 +258,7 @@ def delete_records(region: str):
 
 
 def insert_records(rc: []):
+    """ insert records to db """
     con = sqlite3.connect(DB_NAME)
     cobj = con.cursor()
     for rr in rc:
@@ -256,6 +269,7 @@ def insert_records(rc: []):
     con.close()
 
 def print_services():
+    """ Print list of all AWS services """
     pricing, ec2s = pricing_boto()
     print("All Services")
     print("============")
@@ -265,6 +279,7 @@ def print_services():
     print()
 
 def ec2_attributes():
+    """ Print list of all AWS EC2 attributes """
     pricing, ec2s = pricing_boto()
     print("Selected EC2 Attributes & Values")
     print("================================")
@@ -282,6 +297,7 @@ def ec2_attributes():
 
 
 def print_prices_from_db():
+    """ Print prices from db """
     con = sqlite3.connect(DB_NAME)
     c_obj = con.cursor()
     sql_query = "SELECT * FROM ec2"
@@ -297,19 +313,9 @@ def print_prices_from_db():
         print("{0: <4} Instance Type: {1: <14} \tvCPU: {2: <4} \tmemory: {3: <5} \tos: {4: <8} \tprice {5}".format(
             rr[0], rr[1], rr[2], rr[3], rr[4], rr[5]))
 
-def get_ec2_ondemand_price(instances=[], os=None, region="None") -> defaultdict(None):
-    pricing, ec2s = pricing_boto(region=region)
-    results = defaultdict(None)
-    for ii in instances:
-        try:
-            spot = ec2s.describe_spot_price_history(InstanceTypes=[ii, ], MaxResults=1,
-                                                    ProductDescriptions=[os_map[os]])
-            results[ii] = float(spot['SpotPriceHistory'][0]['SpotPrice'])
-        except (IndexError,KeyError) as _:
-            results[ii] = 0
-    return results
 
 def get_ec2_spot_price(instances=[], os=None, region="None") -> defaultdict(None):
+    """ get spot prices for EC2s """
     pricing, ec2s = pricing_boto(region=region)
     results = defaultdict(None)
     for ii in instances:
@@ -323,6 +329,7 @@ def get_ec2_spot_price(instances=[], os=None, region="None") -> defaultdict(None
 
 
 def get_ec2_spot_interruption(instances=[], os=None, region=None) -> defaultdict(None):
+    """ get spot interruption rates """
     import requests
     import json
     results = defaultdict(None)
@@ -348,6 +355,7 @@ def get_ec2_spot_interruption(instances=[], os=None, region=None) -> defaultdict
     return results
 
 def create_db():
+    """ create db """
     con = sqlite3.connect(DB_NAME)
     c_obj = con.cursor()
     # create table if does not exist
