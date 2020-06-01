@@ -216,8 +216,8 @@ def main(testing=False):
                       .format("Instance", "vCPU", "RAM", "OS", "PriceH", "PriceM", "SpotH", "SpotM", "KillRate")
         print(Fore.LIGHTGREEN_EX + txt_header)
         instances = [rr[1] for rr in result]
-        spot_prices = get_ec2_spot_price(instances=instances, os=P_OS, region=P_REGION)
-        spot_interrupt_rates = get_ec2_spot_interruption(instances=instances, os=P_OS, region=region_map[P_REGION])
+        spot_prices = get_ec2_spot_price(instances=instances, os=pos, region=pregion)
+        spot_interrupt_rates = get_ec2_spot_interruption(instances=instances, os=pos, region=region_map[pregion])
         for rr in result:
             spotprice_hourly = spot_prices[rr[1]]
             spotprice_monthly = spotprice_hourly * 24 * 30

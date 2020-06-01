@@ -3,6 +3,8 @@ from includes import read_yaml
 from includes import REGION_NVIRGINIA
 from awsEC2pricing import get_sys_argv
 from awsEC2pricing import main
+from includes import get_ec2_spot_price, get_ec2_spot_interruption
+from includes import region_map
 
 def test_print_help():
     assert print_help()
@@ -47,6 +49,18 @@ def test_get_sys_argv_negative():
     # test incorrect region
     success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(['', '-t', '4', '8', 'Linux', 'x'])
     assert not success
+
+
+def test_spot_prices():
+    instances = ['t3.medium', 't2.medium', 't3.large', 'm6g.large']
+    spot_prices = get_ec2_spot_price(instances=instances, os='Linux', region=REGION_NVIRGINIA)
+    assert len(spot_prices) == 4
+
+
+def test_spot_interruption():
+    instances = ['t3.medium', 't2.medium', 't3.large', 'm6g.large']
+    spot_interrupt_rates = get_ec2_spot_interruption(instances=instances, os='Linux', region=region_map[REGION_NVIRGINIA])
+    assert len(spot_interrupt_rates) == 4
 
 def test_main():
     assert main(testing=True)
