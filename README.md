@@ -1,13 +1,25 @@
 # awsEC2pricefinder
 
 ## Install
-tested with Python 3.7
+tested with Python 3.9
 
 #### Install requirements
 To install requirements, run command:
 ```
 $ pip3 install -r requirements.txt
 ```
+With Python 3.9 the Tkinter library is no more standard. 
+You need to install it. 
+
+MacOS
+```
+brew install python-tk@3.9
+```
+Debian/Ununtu
+```
+sudo apt-get install python3-tk 
+```
+
 #### AWS credentials
 Copy credentails.yaml.example to credentails.yaml
 Edit it and fill aws key+secret details. 
