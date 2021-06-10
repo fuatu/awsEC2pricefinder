@@ -13,7 +13,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.8,]
+        python-version: [3.9,]
 
     steps:
     - uses: actions/checkout@v2
@@ -26,6 +26,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install Dependencies
       run: |
+        apt-get install python3-tk  
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         printf 'credentials:\n   access_key: ${{ secrets.aws_access_key }}\n   secret_key: ${{ secrets.aws_secret_key }}\n   default_region: us-east-1\n' > credentials.yaml
