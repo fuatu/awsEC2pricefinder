@@ -4,9 +4,14 @@
 tested with Python 3.9
 
 #### Install requirements
-To install requirements, run command:
+If you do not have pipenv install it first. 
 ```
-$ pip3 install -r requirements.txt
+$ pip install pipenv
+```
+To install requirements, run commands in project folder:
+```
+$ pipenv shell
+$ pipenv install 
 ```
 With Python 3.9 the Tkinter library is no more standard. 
 You need to install it. 
