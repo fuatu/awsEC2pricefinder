@@ -4,3 +4,4 @@ __pycache__
 awsprices.db
 .vscode
 venv
+.python-version

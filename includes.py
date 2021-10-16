@@ -9,7 +9,7 @@ import sqlite3
 from datetime import date
 from collections import defaultdict
 
-PAR_VCPU = 2
+P_VCPU = 2
 P_RAM = 4
 REGION_NVIRGINIA = 'US East (N. Virginia)'
 P_REGION = REGION_NVIRGINIA
@@ -163,7 +163,7 @@ def pricing_boto(region=None):
     return session.client('pricing'), session.client('ec2')
 
 
-def find_ec2(cpu=PAR_VCPU, ram=P_RAM, os='Linux', region=P_REGION, limit=6):
+def find_ec2(cpu=P_VCPU, ram=P_RAM, os='Linux', region=P_REGION, limit=6):
     """ find ec2s from DB """
     get_ec2_pricing(region=region)
     con = sqlite3.connect(DB_NAME)

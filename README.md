@@ -13,30 +13,11 @@ To install requirements, run commands in project folder:
 $ pipenv shell
 $ pipenv install 
 ```
-With Python 3.9 the Tkinter library is no more standard. 
-You need to install it. 
-
-MacOS
-```
-brew install python-tk@3.9
-```
-Debian/Ununtu
-```
-sudo apt-get install python3-tk 
-```
 
 #### AWS credentials
 Copy credentails.yaml.example to credentails.yaml
 Edit it and fill aws key+secret details. 
 Your AWS user needs to have IAM rights to read pricing.
-
-## graphical interface
-run without parameters
-```
-$ python awsEC2pricing.py
-```
-
-![alt text](https://i.ibb.co/G0vdH9Y/image.png)
 
 ## example output from terminal
 ```
