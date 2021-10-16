@@ -102,11 +102,11 @@ region_map = {
     'Canada (Central)': 'ca-central-1',
     'China (Beijing)': 'cn-north-1',
     'China (Ningxia)': 'cn-northwest-1',
-    'Europe (Frankfurt)': 'eu-central-1',
+    'EU (Frankfurt)': 'eu-central-1',
     'EU (Ireland)': 'eu-west-1',
-    'Europe (London)': 'eu-west-2',
-    'Europe (Paris)': 'eu-west-3',
-    'Europe (Stockholm)': 'eu-north-1',
+    'EU (London)': 'eu-west-2',
+    'EU (Paris)': 'eu-west-3',
+    'EU (Stockholm)': 'eu-north-1',
     'Middle East (Bahrain)': 'me-south-1',
     'South America (Sao Paulo)': 'sa-east-1'
 }
