@@ -37,18 +37,12 @@ jobs:
         pipenv run pytest --cov=./ --cov-report xml:coverage.xml
         pipenv run pylint ./*.py -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > pylint.log || exit 0
     - name: SonarCloud Scan
-      uses: sonarsource/sonarqube-scan-action@master
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_DD }}
-        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-
-   # - name: SonarCloud Scan
-   #   uses: SonarSource/sonarcloud-github-action@v1.2
-   #   with:
+      uses: SonarSource/sonarcloud-github-action@v1.2
+      with:
         # Set the sonar.projectBaseDir analysis property
-   #     projectBaseDir: . # optional, default is .
-   #   env:
-   #     SONAR_TOKEN: ${{ secrets.sonar_qube }}
-   #     GITHUB_TOKEN: ${{ secrets.mygithub_token }}
+        projectBaseDir: . # optional, default is .
+      env:
+        SONAR_TOKEN: ${{ secrets.sonar_qube }}
+        GITHUB_TOKEN: ${{ secrets.mygithub_token }}
 
           
