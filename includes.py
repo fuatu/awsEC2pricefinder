@@ -188,10 +188,7 @@ def get_ec2_pricing(region=P_REGION):
     pricing, ec2s = pricing_boto(region=P_REGION)
     dt_today = date.today()
     next_token = ''
-    while next_token is not None:
-        response = pricing.get_products(
-            ServiceCode='AmazonEC2',
-            Filters=[
+    filters = [
                 {'Type': 'TERM_MATCH', 'Field': 'preInstalledSw', 'Value': 'NA'},
                 {'Type': 'TERM_MATCH', 'Field': 'storage', 'Value': 'EBS only'},
                 {'Type': 'TERM_MATCH', 'Field': 'productFamily', 'Value': 'Compute Instance'},
@@ -200,10 +197,20 @@ def get_ec2_pricing(region=P_REGION):
                 {'Type': 'TERM_MATCH', 'Field': 'licenseModel', 'Value': 'No License required'},
                 {'Type': 'TERM_MATCH', 'Field': 'tenancy', 'Value': 'Shared'},
                 {'Type': 'TERM_MATCH', 'Field': 'capacitystatus', 'Value': 'Used'}
-            ],
-            NextToken=next_token
-            # use MaxResults=100 for limiting the results if needed
-        )
+            ]
+    while next_token is not None:
+        if next_token:
+            response = pricing.get_products(
+                ServiceCode='AmazonEC2',
+                Filters= filters,
+                NextToken=next_token
+                # use MaxResults=100 for limiting the results if needed
+            )
+        else:
+            response = pricing.get_products(
+                ServiceCode='AmazonEC2',
+                Filters= filters,
+            )
         try:
             next_token = response['NextToken']
         except KeyError:

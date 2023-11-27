@@ -9,6 +9,7 @@ boto3 = "*"
 pyyaml = "*"
 requests = "*"
 pylint = "*"
+certifi = "*"
 
 [dev-packages]
 pytest = "*"
