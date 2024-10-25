@@ -1,7 +1,7 @@
 # awsEC2pricefinder
 
 ## Install
-tested with Python 3.9
+tested with Python 3.12
 
 #### Install requirements
 If you do not have pipenv install it first. 
