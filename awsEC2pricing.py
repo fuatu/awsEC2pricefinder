@@ -27,6 +27,32 @@ SUMMARY_FORMAT = (
     Style.RESET_ALL + "--------------------------"
 )
 
+
+def get_sanitized_args(testing: bool) -> List[str]:
+    """
+    Get and sanitize command line arguments.
+    
+    Args:
+        testing: Boolean indicating if in test mode
+    
+    Returns:
+        List of sanitized command line arguments
+    """
+    if testing:
+        return ['', '-t', '8', '16', 'Linux', REGION_NVIRGINIA]
+    
+    # Create a copy of sys.argv to avoid modifying the original
+    args = sys.argv.copy()
+    
+    # Sanitize and validate each argument
+    sanitized_args = []
+    for arg in args:
+        # Remove any potentially dangerous characters
+        cleaned_arg = ''.join(c for c in str(arg) if c.isalnum() or c in '.-_')
+        sanitized_args.append(cleaned_arg)
+    
+    return sanitized_args
+
 def get_sys_argv(pp_args: List[str]) -> Tuple[bool, bool, float, float, str, str]:
     """
     Parse and validate command line arguments.
@@ -132,7 +158,7 @@ def main(testing: bool = False) -> Optional[bool]:
     Returns:
         Boolean indicating success in test mode, None otherwise
     """
-    pp_args = ['', '-t', '8', '16', 'Linux', REGION_NVIRGINIA] if testing else sys.argv
+    pp_args = get_sanitized_args(testing)
     success, text_only, vcpu, ram, os_type, region = get_sys_argv(pp_args)
 
     if not success:
