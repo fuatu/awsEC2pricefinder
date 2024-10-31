@@ -1,85 +1,47 @@
-# encoding: utf-8
-# module sys
 """
-this module is a collection of functions used
-in the main script
+AWS EC2 Price Finder Helper Module
+
+This module provides utility functions and constants for the AWS EC2 Price Finder tool.
+It handles AWS pricing API interactions, database operations, and various helper functions
+for retrieving and managing EC2 instance pricing information.
 """
+
 import json
 import sqlite3
 from datetime import date
+from typing import List, Dict, Tuple, Optional, Any, DefaultDict
 from collections import defaultdict
+import yaml
+import boto3
+import requests
+from colorama import Fore, Style
 
+# Default configuration values
 P_VCPU = 2
 P_RAM = 4
-REGION_NVIRGINIA = 'US East (N. Virginia)'
-P_REGION = REGION_NVIRGINIA
 P_OS = 'Linux'
 DB_NAME = 'awsprices.db'
+REGION_NVIRGINIA = 'US East (N. Virginia)'
+P_REGION = REGION_NVIRGINIA
+DB_RECORD_EXPIRY_DAYS = 7
+MAX_RESULTS = 100
 
-AVAILABILITY_ZONE = ""
-REGIONS = \
-    '''
-        US East (N. Virginia)
-        EU (Ireland)
-        Asia Pacific (Hong Kong)
-        Asia Pacific (Mumbai)
-        Asia Pacific (Osaka - Local)
-        Asia Pacific (Seoul)
-        Asia Pacific (Singapore)
-        Asia Pacific (Sydney)
-        Asia Pacific (Tokyo)
-        Canada(Central)
-        EU (Frankfurt)
-        EU (London)
-        EU (Paris)
-        EU (Stockholm)
-        Middle East (Bahrain)
-        South America (Sao Paulo)
-        US East (Ohio)
-        US West (Los Angeles)
-        US West (N. California)
-        US West (Oregon)'''
+# AWS specific constants
+AWS_SERVICE_CODE = 'AmazonEC2'
+SPOT_ADVISOR_URL = "https://spot-bid-advisor.s3.amazonaws.com/spot-advisor-data.json"
 
-HELP_TEXT = "Here are the default filter conditions:\n\n" + \
-            "preInstalledSw: NA\n" + \
-            "storage: EBS only\n" + \
-            "productFamily: Compute Instance\n" + \
-            "termType: OnDemand\n" + \
-            "licenseModel: No License required" + \
-            "capacitystatus: Used"
+# EC2 filter constants
+EC2_FILTERS = {
+    'preInstalledSw': 'NA',
+    'storage': 'EBS only',
+    'productFamily': 'Compute Instance',
+    'termType': 'OnDemand',
+    'licenseModel': 'No License required',
+    'tenancy': 'Shared',
+    'capacitystatus': 'Used'
+}
 
-list_regions = [
-    REGION_NVIRGINIA,
-    REGION_NVIRGINIA,
-    'EU (Ireland)',
-    'Asia Pacific (Hong Kong)',
-    'Asia Pacific (Mumbai)',
-    'Asia Pacific (Osaka - Local)',
-    'Asia Pacific (Seoul)',
-    'Asia Pacific (Singapore)',
-    'Asia Pacific (Sydney)',
-    'Asia Pacific (Tokyo)',
-    'Canada(Central)',
-    'EU (Frankfurt)',
-    'EU (London)',
-    'EU (Paris)',
-    'EU (Stockholm)',
-    'Middle East (Bahrain)',
-    'South America (Sao Paulo)',
-    'US East (Ohio)',
-    'US West (Los Angeles)',
-    'US West (N. California)',
-    'US West (Oregon)'
-]
-
-list_os = [
-    'Linux',
-    'Linux',
-    'RHEL',
-    'SUSE',
-    'Windows',
-]
-
+# Mapping dictionaries
 os_map = {
     'Linux': 'Linux/UNIX (Amazon VPC)',
     'SUSE': 'SUSE Linux (Amazon VPC)',
@@ -111,9 +73,234 @@ region_map = {
     'South America (Sao Paulo)': 'sa-east-1'
 }
 
-def print_help():
-    """ Print help in terminal """
-    from colorama import Fore, Style
+# Available regions and OS options
+list_regions = list(region_map.keys())
+list_os = list(os_map.keys())
+
+def adapt_date(val: date) -> str:
+    """Convert date to string format for SQLite storage."""
+    return val.isoformat()
+
+def convert_date(val: str) -> date:
+    """Convert string from SQLite to date object."""
+    return date.fromisoformat(val.decode())
+
+# Register the adapters with SQLite
+sqlite3.register_adapter(date, adapt_date)
+sqlite3.register_converter("DATE", convert_date)
+
+class DatabaseManager:
+    """Handles all database operations for EC2 pricing data."""
+    
+    def __init__(self, db_name: str = DB_NAME):
+        self.db_name = db_name
+        self.create_db()
+
+    def _get_connection(self) -> sqlite3.Connection:
+        """Create a connection with proper date handling."""
+        return sqlite3.connect(
+            self.db_name,
+            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
+        )
+
+    def create_db(self) -> None:
+        """Create the database and required tables if they don't exist."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            sql_query = """
+                CREATE TABLE IF NOT EXISTS ec2(
+                    id INTEGER PRIMARY KEY,
+                    instanceType TEXT,
+                    vcpu REAL,
+                    memory REAL,
+                    os TEXT,
+                    price REAL,
+                    region TEXT,
+                    add_date DATE
+                )
+            """
+            cursor.execute(sql_query)
+            conn.commit()
+
+    def insert_records(self, records: List[Tuple]) -> None:
+        """Insert multiple EC2 pricing records into the database."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.executemany(
+                """INSERT INTO ec2(instanceType, vcpu, memory, os, price, region, add_date)
+                   VALUES(?, ?, ?, ?, ?, ?, ?)""",
+                records
+            )
+            conn.commit()
+
+    def delete_records(self, region: str) -> None:
+        """Delete records for a specific region."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM ec2 WHERE region=?", (region,))
+            conn.commit()
+
+    def are_records_old(self, region: str) -> bool:
+        """Check if records for a region are older than DB_RECORD_EXPIRY_DAYS."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT add_date FROM ec2 WHERE region=? LIMIT 1", (region,))
+            result = cursor.fetchone()
+            
+            if not result:
+                return True
+
+            record_date = result[0]  # Now returns a date object directly
+            return (date.today() - record_date).days >= DB_RECORD_EXPIRY_DAYS
+
+    def find_ec2(self, cpu: float, ram: float, os: str, region: str, limit: int) -> List[Tuple]:
+        """Find EC2 instances matching the specified criteria."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            sql_query = """
+                SELECT * FROM ec2
+                WHERE vcpu >= ? AND memory >= ?
+                AND region = ? AND os = ?
+                ORDER BY price LIMIT ?
+            """
+            cursor.execute(sql_query, (cpu, ram, region, os, limit))
+            return cursor.fetchall()
+
+class AWSPricing:
+    """Handles AWS pricing API interactions."""
+
+    def __init__(self):
+        self.db = DatabaseManager()
+        self.credentials = self._load_credentials()
+
+    def _load_credentials(self) -> Dict:
+        """Load AWS credentials from yaml file."""
+        try:
+            with open('credentials.yaml', 'r') as stream:
+                return yaml.safe_load(stream)['credentials']
+        except (yaml.YAMLError, FileNotFoundError) as e:
+            raise Exception("Failed to load credentials: " + str(e))
+
+    def get_boto_clients(self, region: Optional[str] = None) -> Tuple[Any, Any]:
+        """Create boto3 clients for pricing and EC2."""
+        session = boto3.Session(
+            aws_access_key_id=self.credentials['access_key'],
+            aws_secret_access_key=self.credentials['secret_key'],
+            region_name=region_map.get(region, self.credentials['default_region'])
+        )
+        return session.client('pricing'), session.client('ec2')
+
+    def get_ec2_pricing(self, region: str = P_REGION) -> None:
+        """Fetch and store EC2 pricing information."""
+        if not self.db.are_records_old(region):
+            print("Records are up-to-date")
+            return
+
+        print("Getting price updates for EC2s")
+        self.db.delete_records(region)
+        pricing, _ = self.get_boto_clients(region)
+
+        filters = [
+            {'Type': 'TERM_MATCH', 'Field': key, 'Value': value}
+            for key, value in {**EC2_FILTERS, 'location': region}.items()
+        ]
+
+        records = []
+        next_token = None
+        
+        while True:
+            kwargs = {
+                'ServiceCode': AWS_SERVICE_CODE,
+                'Filters': filters
+            }
+            if next_token:
+                kwargs['NextToken'] = next_token
+
+            response = pricing.get_products(**kwargs)
+            
+            for price in response['PriceList']:
+                record = self._parse_price_list_item(price, region)
+                if record:
+                    records.append(record)
+
+            next_token = response.get('NextToken')
+            if not next_token:
+                break
+
+        self.db.insert_records(records)
+
+    def _parse_price_list_item(self, price: str, region: str) -> Optional[Tuple]:
+        """Parse a price list item into a database record."""
+        details = json.loads(price)
+        try:
+            pricedimensions = next(iter(details['terms']['OnDemand'].values()))['priceDimensions']
+            pricing_details = next(iter(pricedimensions.values()))
+            instance_price = float(pricing_details['pricePerUnit']['USD'])
+            
+            if instance_price <= 0:
+                return None
+
+            attributes = details['product']['attributes']
+            return (
+                attributes['instanceType'],
+                float(attributes['vcpu']),
+                float(attributes['memory'].split()[0]),
+                attributes['operatingSystem'],
+                instance_price,
+                region,
+                date.today()
+            )
+        except (KeyError, ValueError, StopIteration):
+            return None
+
+    def get_spot_prices(self, instances: List[str], os: str, region: str) -> DefaultDict:
+        """Get spot prices for specified instances."""
+        _, ec2 = self.get_boto_clients(region)
+        results = defaultdict(float)
+
+        for instance in instances:
+            try:
+                spot = ec2.describe_spot_price_history(
+                    InstanceTypes=[instance],
+                    MaxResults=1,
+                    ProductDescriptions=[os_map[os]]
+                )
+                if spot['SpotPriceHistory']:
+                    results[instance] = float(spot['SpotPriceHistory'][0]['SpotPrice'])
+            except (IndexError, KeyError):
+                continue
+
+        return results
+
+    def get_spot_interruption_rates(self, instances: List[str], os: str, region: str) -> DefaultDict:
+        """Get spot interruption rates for specified instances."""
+        results = defaultdict(str)
+        rates = {
+            0: "<5%",
+            1: "5-10%",
+            2: "10-15%",
+            3: "15-20%",
+            4: ">20%"
+        }
+
+        try:
+            response = requests.get(SPOT_ADVISOR_URL)
+            spot_advisor = json.loads(response.text)['spot_advisor']
+            
+            for instance in instances:
+                try:
+                    rate = spot_advisor[region][os][instance]['r']
+                    results[instance] = rates[rate]
+                except (KeyError, IndexError):
+                    continue
+
+        except requests.exceptions.RequestException:
+            pass
+
+        return results
+
+def print_help() -> None:
+    """Print help information to the terminal."""
     print("----------------------------------")
     print(Fore.GREEN + "Sample command:\n$ python awsEC2pricing.py -t 1 16 Windows 'US East (N. Virginia)'")
     print(Style.RESET_ALL + "----------------------------------")
@@ -125,251 +312,26 @@ def print_help():
     print(Style.RESET_ALL + "----------------------------------")
     print(Fore.GREEN + " rename credentials.yaml.example to credentials.yaml and fill your aws key and secret")
     print(" your user in AWS needs rights for reading price")
-    print(Style.RESET_ALL)
-    print("----------------------------------")
-    print(Fore.GREEN + "Regions:")
-    print(REGIONS)
     print(Style.RESET_ALL + "----------------------------------")
-    return True
+    print(Fore.GREEN + "Available Regions:")
+    for region in list_regions:
+        print(f"  {region}")
+    print(Style.RESET_ALL + "----------------------------------")
 
+# Convenience functions that use the classes above
+def find_ec2(cpu: float = P_VCPU, ram: float = P_RAM,
+             os: str = P_OS, region: str = P_REGION, limit: int = 6) -> List[Tuple]:
+    """Find EC2 instances matching the specified criteria."""
+    aws_pricing = AWSPricing()
+    aws_pricing.get_ec2_pricing(region)
+    return aws_pricing.db.find_ec2(cpu, ram, os, region, limit)
 
-def read_yaml(filename=None):
-    """ read yaml file """
-    import yaml
+def get_ec2_spot_price(instances: List[str], os: str, region: str) -> DefaultDict:
+    """Get spot prices for specified instances."""
+    aws_pricing = AWSPricing()
+    return aws_pricing.get_spot_prices(instances, os, region)
 
-    try:
-        stream = open(filename, 'r')
-        file_details = yaml.safe_load(stream)
-    except (yaml.YAMLError, FileNotFoundError):
-        print("Not yaml file...")
-        return None
-    return file_details
-
-
-def pricing_boto(region=None):
-    """ boto pricing session create """
-    import boto3
-    filename = 'credentials.yaml'
-    file_details = read_yaml(filename=filename)
-    if region is None:
-        l_region = file_details['credentials']['default_region']
-    else:
-        l_region = region_map[region]
-    session = boto3.Session(
-        aws_access_key_id=file_details['credentials']['access_key'],
-        aws_secret_access_key=file_details['credentials']['secret_key'],
-        region_name=l_region,
-    )
-    return session.client('pricing'), session.client('ec2')
-
-
-def find_ec2(cpu=P_VCPU, ram=P_RAM, os='Linux', region=P_REGION, limit=6):
-    """ find ec2s from DB """
-    get_ec2_pricing(region=region)
-    con = sqlite3.connect(DB_NAME)
-    cobj = con.cursor()
-    sql_query = "SELECT * FROM ec2 WHERE vcpu>=? AND memory>=? AND region=? AND os=? ORDER BY price LIMIT " + str(limit)
-    cobj.execute(sql_query, (cpu, ram, region, os))
-    result = cobj.fetchall()
-    cobj.close()
-    con.close()
-    return result
-
-
-def get_ec2_pricing(region=P_REGION):
-    """ get ec2 pricing """
-    if are_records_old(region=region):
-        print("Getting price updates for EC2s")
-        delete_records(region)
-    else:
-        print("Records are up-to-date")
-        # print_prices_from_db()
-        return
-    pricing, ec2s = pricing_boto(region=P_REGION)
-    dt_today = date.today()
-    next_token = ''
-    filters = [
-                {'Type': 'TERM_MATCH', 'Field': 'preInstalledSw', 'Value': 'NA'},
-                {'Type': 'TERM_MATCH', 'Field': 'storage', 'Value': 'EBS only'},
-                {'Type': 'TERM_MATCH', 'Field': 'productFamily', 'Value': 'Compute Instance'},
-                {'Type': 'TERM_MATCH', 'Field': 'termType', 'Value': 'OnDemand'},
-                {'Type': 'TERM_MATCH', 'Field': 'location', 'Value': region},
-                {'Type': 'TERM_MATCH', 'Field': 'licenseModel', 'Value': 'No License required'},
-                {'Type': 'TERM_MATCH', 'Field': 'tenancy', 'Value': 'Shared'},
-                {'Type': 'TERM_MATCH', 'Field': 'capacitystatus', 'Value': 'Used'}
-            ]
-    while next_token is not None:
-        if next_token:
-            response = pricing.get_products(
-                ServiceCode='AmazonEC2',
-                Filters= filters,
-                NextToken=next_token
-                # use MaxResults=100 for limiting the results if needed
-            )
-        else:
-            response = pricing.get_products(
-                ServiceCode='AmazonEC2',
-                Filters= filters,
-            )
-        try:
-            next_token = response['NextToken']
-        except KeyError:
-            next_token = None
-        records = []
-        for price in response['PriceList']:
-            details = json.loads(price)
-            pricedimensions = next(iter(details['terms']['OnDemand'].values()))['priceDimensions']
-            pricing_details = next(iter(pricedimensions.values()))
-            instance_price = float(pricing_details['pricePerUnit']['USD'])
-            if instance_price <= 0:
-                continue
-            instance_type = details['product']['attributes']['instanceType']
-            vcpu = details['product']['attributes']['vcpu']
-            memory = details['product']['attributes']['memory'].split(" ")[0]
-            os = json.loads(price)['product']['attributes']['operatingSystem']
-            line = (instance_type, vcpu, memory, os, instance_price, region, dt_today)
-            records.append(line)
-        insert_records(rc=records)
-
-
-def are_records_old(region=P_REGION):
-    """ check if db records are old """
-    create_db()
-    con = sqlite3.connect(DB_NAME)
-    cobj = con.cursor()
-    sql_query = "SELECT add_date FROM ec2 WHERE region=? LIMIT 1"
-    cobj.execute(sql_query, (region,))
-    result = cobj.fetchall()
-    cobj.close()
-    con.close()
-    if not result:
-        return True
-    year = int(result[0][0].split("-")[0])
-    month = int(result[0][0].split("-")[1])
-    day = int(result[0][0].split("-")[2])
-    rec_date = date(year, month, day)
-    difference = date.today() - rec_date
-    if int(difference.days) >= 7:
-        return True
-    return False
-
-
-def delete_records(region: str):
-    """ delete records in db """
-    con = sqlite3.connect(DB_NAME)
-    cobj = con.cursor()
-    cobj.execute("DELETE FROM ec2 WHERE region=?", (region,))
-    con.commit()
-    cobj.close()
-    con.close()
-
-
-def insert_records(rc: []):
-    """ insert records to db """
-    con = sqlite3.connect(DB_NAME)
-    cobj = con.cursor()
-    for rr in rc:
-        cobj.execute(
-            "INSERT into ec2(instanceType, vcpu, memory, os, price, region, add_date) VALUES(?, ?, ?, ?, ?, ?, ?)", rr)
-    con.commit()
-    cobj.close()
-    con.close()
-
-def print_services():
-    """ Print list of all AWS services """
-    pricing, ec2s = pricing_boto()
-    print("All Services")
-    print("============")
-    response = pricing.describe_services()
-    for service in response['Services']:
-        print(service['ServiceCode'] + ": " + ", ".join(service['AttributeNames']))
-    print()
-
-def ec2_attributes():
-    """ Print list of all AWS EC2 attributes """
-    pricing, ec2s = pricing_boto()
-    print("Selected EC2 Attributes & Values")
-    print("================================")
-    response = pricing.describe_services(ServiceCode='AmazonEC2')
-    attrs = response['Services'][0]['AttributeNames']
-
-    for attr in attrs:
-        response = pricing.get_attribute_values(ServiceCode='AmazonEC2', AttributeName=attr)
-
-        values = []
-        for attr_value in response['AttributeValues']:
-            values.append(attr_value['Value'])
-
-        print("  " + attr + ": " + ", ".join(values))
-
-
-def print_prices_from_db():
-    """ Print prices from db """
-    con = sqlite3.connect(DB_NAME)
-    c_obj = con.cursor()
-    sql_query = "SELECT * FROM ec2"
-    c_obj.execute(sql_query)
-    result = c_obj.fetchall()
-    c_obj.close()
-    con.close()
-    if result == []:
-        print("No records")
-    print("Selected EC2 Products")
-    print("=====================")
-    for rr in result:
-        print("{0: <4} Instance Type: {1: <14} \tvCPU: {2: <4} \tmemory: {3: <5} \tos: {4: <8} \tprice {5}".format(
-            rr[0], rr[1], rr[2], rr[3], rr[4], rr[5]))
-
-
-def get_ec2_spot_price(instances=[], os=None, region="None") -> defaultdict(None):
-    """ get spot prices for EC2s """
-    pricing, ec2s = pricing_boto(region=region)
-    results = defaultdict(None)
-    for ii in instances:
-        try:
-            spot = ec2s.describe_spot_price_history(InstanceTypes=[ii, ], MaxResults=1,
-                                                    ProductDescriptions=[os_map[os]])
-            results[ii] = float(spot['SpotPriceHistory'][0]['SpotPrice'])
-        except (IndexError,KeyError) as _:
-            results[ii] = 0
-    return results
-
-
-def get_ec2_spot_interruption(instances=[], os=None, region=None) -> defaultdict(None):
-    """ get spot interruption rates """
-    import requests
-    import json
-    results = defaultdict(None)
-    url_interruptions = "https://spot-bid-advisor.s3.amazonaws.com/spot-advisor-data.json"
-    try:
-        response = requests.get(url=url_interruptions)
-        spot_advisor = json.loads(response.text)['spot_advisor']
-    except requests.exceptions.ConnectionError:
-        return
-    rates = {
-        0: "<5%",
-        1: "5-10%",
-        2: "10-15%",
-        3: "15-20%",
-        4: ">20%"
-    }
-    for ii in instances:
-        try:
-            rate = spot_advisor[region][os][ii]['r']
-            results[ii] = rates[rate]
-        except (IndexError,KeyError):
-            results[ii] = ""
-    return results
-
-def create_db():
-    """ create db """
-    con = sqlite3.connect(DB_NAME)
-    c_obj = con.cursor()
-    # create table if does not exist
-    sql_query =  "CREATE TABLE IF NOT EXISTS " \
-                 "ec2(id INTEGER PRIMARY KEY, instanceType TEXT, vcpu REAL, memory REAL, " \
-                 "os TEXT, price REAL, region TEXT, add_date DATE)"
-    c_obj.execute(sql_query)
-    con.commit()
-    c_obj.close()
-    con.close()
+def get_ec2_spot_interruption(instances: List[str], os: str, region: str) -> DefaultDict:
+    """Get spot interruption rates for specified instances."""
+    aws_pricing = AWSPricing()
+    return aws_pricing.get_spot_interruption_rates(instances, os, region)
