@@ -15,6 +15,11 @@ import yaml
 import boto3
 import requests
 from colorama import Fore, Style
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Default configuration values
 P_VCPU = 2
@@ -179,7 +184,8 @@ class AWSPricing:
             with open('credentials.yaml', 'r') as stream:
                 return yaml.safe_load(stream)['credentials']
         except (yaml.YAMLError, FileNotFoundError) as e:
-            raise Exception("Failed to load credentials: " + str(e))
+            logger.error(f"Failed to load credentials: {e}")
+            raise
 
     def get_boto_clients(self, region: Optional[str] = None) -> Tuple[Any, Any]:
         """Create boto3 clients for pricing and EC2."""
@@ -267,7 +273,8 @@ class AWSPricing:
                 )
                 if spot['SpotPriceHistory']:
                     results[instance] = float(spot['SpotPriceHistory'][0]['SpotPrice'])
-            except (IndexError, KeyError):
+            except (IndexError, KeyError) as e:
+                logger.warning(f"Error retrieving spot price for {instance}: {e}")
                 continue
 
         return results
@@ -291,13 +298,22 @@ class AWSPricing:
                 try:
                     rate = spot_advisor[region][os][instance]['r']
                     results[instance] = rates[rate]
-                except (KeyError, IndexError):
+                except (KeyError, IndexError) as e:
+                    logger.warning(f"Error retrieving interruption rate for {instance}: {e}")
                     continue
 
-        except requests.exceptions.RequestException:
-            pass
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to fetch spot advisor data: {e}")
 
         return results
+
+def get_region_code(region_name: str) -> str:
+    """Return the AWS region code for a given region name."""
+    return region_map.get(region_name, region_name)
+
+def get_os_description(os_name: str) -> str:
+    """Return the AWS OS description for a given OS name."""
+    return os_map.get(os_name, os_name)
 
 def print_help() -> None:
     """Print help information to the terminal."""

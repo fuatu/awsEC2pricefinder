@@ -4,12 +4,14 @@ Provides both on-demand and spot pricing information along with interruption rat
 """
 
 import sys
-from typing import Tuple, List, Optional, Union
+import argparse
+from typing import Tuple, List, Optional, Union, Dict, Any
 from colorama import Fore, Style
 from includes import (
     list_regions, list_os, find_ec2, get_ec2_spot_price,
     get_ec2_spot_interruption, print_help, region_map,
-    P_VCPU, P_RAM, P_OS, P_REGION, REGION_NVIRGINIA
+    P_VCPU, P_RAM, P_OS, P_REGION, REGION_NVIRGINIA,
+    get_region_code, get_os_description
 )
 
 # Constants
@@ -19,107 +21,123 @@ DAYS_PER_MONTH = 30
 MONTHLY_HOURS = HOURS_PER_DAY * DAYS_PER_MONTH
 
 # Output format templates
-HEADER_FORMAT = "{:<15} {:<6} {:<6} {:<10} {:<8} {:<11} {:<8} {:<10} {:<8}"
-INSTANCE_FORMAT = "{:<15} {:<6.2f} {:<6.2f} {:<10} {:.5f}  {:<10.5f}  {:.5f}  {:<10.5f} {:<3}"
+HEADER_FORMAT = "{:<15} {:<6} {:<6} {:<10} {:<8} {:<11} {:<8} {:<10} {:<8} {:<10}"
+INSTANCE_FORMAT = "{:<15} {:<6.2f} {:<6.2f} {:<10} {:.5f}  {:<10.5f}  {:.5f}  {:<10.5f} {:<8} {:<10}"
 SUMMARY_FORMAT = (
     Style.RESET_ALL + "--------------------------\n" +
     Fore.GREEN + " vCPU: {0:.2f}\n RAM: {1:.2f}\n OS: {2}\n Region: {3}\n" +
     Style.RESET_ALL + "--------------------------"
 )
 
+# Burstable instance pattern and baseline percentages
+# Based on AWS documentation: t3.nano has 5% baseline, t3.micro 10%, etc.
+BURSTABLE_INSTANCES = {
+    't2.nano': '5%',
+    't2.micro': '10%',
+    't2.small': '20%',
+    't2.medium': '40%',
+    't2.large': '60%',
+    't2.xlarge': '90%',
+    't2.2xlarge': '90%',
+    't3.nano': '5%',
+    't3.micro': '10%',
+    't3.small': '20%',
+    't3.medium': '20%',
+    't3.large': '30%',
+    't3.xlarge': '40%',
+    't3.2xlarge': '40%',
+    't3a.nano': '5%',
+    't3a.micro': '10%',
+    't3a.small': '20%',
+    't3a.medium': '20%',
+    't3a.large': '30%',
+    't3a.xlarge': '40%',
+    't3a.2xlarge': '40%',
+    't4g.nano': '5%',
+    't4g.micro': '10%',
+    't4g.small': '20%',
+    't4g.medium': '20%',
+    't4g.large': '30%',
+    't4g.xlarge': '40%',
+    't4g.2xlarge': '40%',
+}
 
-def get_sanitized_args(testing: bool) -> List[str]:
+def get_burstable_info(instance_name: str) -> str:
     """
-    Get and sanitize command line arguments.
+    Returns burstable baseline percentage for given instance if it's a burstable instance.
+    
+    Args:
+        instance_name: The name of the EC2 instance
+        
+    Returns:
+        Baseline percentage as string or empty string if not burstable
+    """
+    return BURSTABLE_INSTANCES.get(instance_name, "")
+
+
+def parse_args(testing: bool = False, argv: Optional[List[str]] = None) -> Dict[str, Any]:
+    """
+    Parse command line arguments using argparse for secure handling.
     
     Args:
         testing: Boolean indicating if in test mode
+        argv: Optional list of arguments to parse (for testing)
     
     Returns:
-        List of sanitized command line arguments
+        Dictionary containing parsed arguments
     """
     if testing:
-        return ['', '-t', '8', '16', 'Linux', REGION_NVIRGINIA]
+        # Return predefined arguments for testing mode
+        return {
+            'text_only': True, 
+            'vcpu': 8.0, 
+            'ram': 16.0,
+            'os': 'Linux',
+            'region': REGION_NVIRGINIA
+        }
     
-    # Create a copy of sys.argv to avoid modifying the original
-    args = sys.argv.copy()
+    parser = argparse.ArgumentParser(
+        description='AWS EC2 Price Finder - Find and compare EC2 instance prices including spot instances',
+        add_help=False  # We'll handle the help manually to keep existing format
+    )
     
-    # Sanitize and validate each argument
-    sanitized_args = []
-    for arg in args:
-        # Remove any potentially dangerous characters
-        cleaned_arg = ''.join(c for c in str(arg) if c.isalnum() or c in '.-_')
-        sanitized_args.append(cleaned_arg)
+    # Add arguments
+    parser.add_argument('-t', action='store_true', dest='text_only',
+                        help='Run in terminal mode')
+    parser.add_argument('-h', action='store_true', dest='show_help',
+                        help='Show help information')
+    parser.add_argument('vcpu', nargs='?', type=float, default=P_VCPU, 
+                        help='Number of virtual CPUs')
+    parser.add_argument('ram', nargs='?', type=float, default=P_RAM,
+                        help='Amount of RAM in GB')
+    parser.add_argument('os', nargs='?', default=P_OS, choices=list_os,
+                        help='Operating system')
+    parser.add_argument('region', nargs='?', default=P_REGION, choices=list_regions,
+                        help='AWS region')
     
-    return sanitized_args
+    # Use provided argv or sys.argv
+    args_list = argv if argv is not None else sys.argv[1:]
 
-def get_sys_argv(pp_args: List[str]) -> Tuple[bool, bool, float, float, str, str]:
-    """
-    Parse and validate command line arguments.
-
-    Args:
-        pp_args: List of command line arguments
-
-    Returns:
-        Tuple containing:
-        - success: Boolean indicating if parsing was successful
-        - text_only: Boolean for text-only output
-        - vcpu: Number of virtual CPUs
-        - ram: Amount of RAM in GB
-        - os: Operating system
-        - region: AWS region
-
-    Raises:
-        ValueError: If numeric arguments cannot be parsed
-    """
-    if len(pp_args) == 1:
+    if not args_list:
         print('no parameters. Check help with -h')
-        return False, False, 0, 0, '', ''
-
-    if pp_args[1] == '-h':
+        sys.exit(1)
+        
+    if '-h' in args_list:
         print_help()
-        return False, False, 0, 0, '', ''
-
-    text_only = pp_args[1] == '-t'
-    if not text_only and pp_args[1] != '-h':
-        print('incorrect parameter check help with -h')
-        return False, False, 0, 0, '', ''
-
-    # Default values
-    vcpu, ram = P_VCPU, P_RAM
-    os_type, region = P_OS, P_REGION
-
-    # Parse vCPU
-    if len(pp_args) > 2:
-        try:
-            vcpu = float(pp_args[2])
-        except ValueError:
-            print('Please use an integer or floating number for vCPU')
-            return False, False, 0, 0, '', ''
-
-    # Parse RAM
-    if len(pp_args) > 3:
-        try:
-            ram = float(pp_args[3])
-        except ValueError:
-            print('Please use an integer or floating number for RAM')
-            return False, False, 0, 0, '', ''
-
-    # Parse OS
-    if len(pp_args) > 4:
-        os_type = pp_args[4]
-        if os_type not in list_os:
-            print("Enter one of the values for os:", list_os)
-            return False, False, 0, 0, '', ''
-
-    # Parse Region
-    if len(pp_args) > 5:
-        region = pp_args[5]
-        if region not in list_regions:
-            print("Enter one of the values for regions. Check help with -h")
-            return False, False, 0, 0, '', ''
-
-    return True, text_only, vcpu, ram, os_type, region
+        sys.exit(0)
+        
+    args = parser.parse_args(args_list)
+    
+    # Validate numeric arguments
+    if args.vcpu <= 0 or args.vcpu > 128:
+        print('vCPU must be a positive number between 1 and 128')
+        sys.exit(1)
+        
+    if args.ram <= 0 or args.ram > 1024:
+        print('RAM must be a positive number between 1 and 1024')
+        sys.exit(1)
+    
+    return vars(args)
 
 def print_instance_details(
     result_row: tuple,
@@ -142,10 +160,11 @@ def print_instance_details(
 
     spot_price_monthly = spot_price * MONTHLY_HOURS
     price_monthly = price * MONTHLY_HOURS
+    burstable_info = get_burstable_info(instance)
 
     print(Fore.GREEN + INSTANCE_FORMAT.format(
         instance, vcpu, ram, os_type, price, price_monthly,
-        spot_price, spot_price_monthly, kill_rate
+        spot_price, spot_price_monthly, kill_rate, burstable_info
     ))
 
 def main(testing: bool = False) -> Optional[bool]:
@@ -158,26 +177,31 @@ def main(testing: bool = False) -> Optional[bool]:
     Returns:
         Boolean indicating success in test mode, None otherwise
     """
-    pp_args = get_sanitized_args(testing)
-    success, text_only, vcpu, ram, os_type, region = get_sys_argv(pp_args)
-
-    if not success:
-        sys.exit()
-
-    if text_only:
-        result = find_ec2(cpu=vcpu, ram=ram, os=os_type, region=region, limit=MAX_EC2_RESULTS)
-        print(Fore.GREEN + SUMMARY_FORMAT.format(vcpu, ram, os_type, region))
+    args = parse_args(testing)
+    
+    if args['text_only']:
+        result = find_ec2(
+            cpu=args['vcpu'], 
+            ram=args['ram'], 
+            os=args['os'], 
+            region=args['region'], 
+            limit=MAX_EC2_RESULTS
+        )
+        
+        print(Fore.GREEN + SUMMARY_FORMAT.format(
+            args['vcpu'], args['ram'], args['os'], args['region']
+        ))
         
         print(Fore.LIGHTGREEN_EX + HEADER_FORMAT.format(
-            "Instance", "vCPU", "RAM", "OS", "PriceH", "PriceM", "SpotH", "SpotM", "KillRate"
+            "Instance", "vCPU", "RAM", "OS", "PriceH", "PriceM", "SpotH", "SpotM", "KillRate", "Burstable"
         ))
 
         instances = [r[1] for r in result]
-        spot_prices = get_ec2_spot_price(instances=instances, os=os_type, region=region)
+        spot_prices = get_ec2_spot_price(instances=instances, os=args['os'], region=args['region'])
         spot_interrupt_rates = get_ec2_spot_interruption(
             instances=instances,
-            os=os_type,
-            region=region_map[region]
+            os=args['os'],
+            region=get_region_code(args['region'])
         )
 
         for row in result:
