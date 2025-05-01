@@ -13,7 +13,7 @@ from includes import (
     REGION_NVIRGINIA, region_map, P_OS,
     find_ec2, get_ec2_spot_price, get_ec2_spot_interruption
 )
-from awsEC2pricing import get_sys_argv, main
+from awsEC2pricing import main
 
 # Test data
 TEST_INSTANCES = ['t3.medium', 't2.medium', 't3.large', 'm6g.large']
@@ -126,35 +126,6 @@ def test_spot_prices(mock_session):
     )
     assert len(prices) == 1
     assert prices['t3.medium'] == 0.0416
-
-def test_get_sys_argv_positive():
-    """Test command line argument parsing - positive cases."""
-    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(
-        ['', '-t', '8', '16', 'Linux', REGION_NVIRGINIA]
-    )
-    assert success
-    assert text_only is True
-    assert pvcpu == 8
-    assert pram == 16
-    assert pos == 'Linux'
-    assert pregion == REGION_NVIRGINIA
-
-def test_get_sys_argv_help():
-    """Test help command line argument."""
-    success, *_ = get_sys_argv(['', '-h'])
-    assert not success
-
-@pytest.mark.parametrize("args,expected", [
-    (['', '-x'], False),  # incorrect parameter
-    (['', '-t', 'x'], False),  # incorrect CPU
-    (['', '-t', '4', 'x'], False),  # incorrect RAM
-    (['', '-t', '4', '8', 'x'], False),  # incorrect OS
-    (['', '-t', '4', '8', 'Linux', 'x'], False),  # incorrect region
-])
-def test_get_sys_argv_negative(args, expected):
-    """Test command line argument parsing - negative cases."""
-    success, *_ = get_sys_argv(args)
-    assert success == expected
 
 @patch('awsEC2pricing.find_ec2')
 @patch('awsEC2pricing.get_ec2_spot_price')
