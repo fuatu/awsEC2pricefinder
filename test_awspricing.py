@@ -190,6 +190,19 @@ def test_parse_args_vcpu_too_high(monkeypatch):
     with pytest.raises(SystemExit):
         parse_args()
 
+def test_parse_args_vars():
+    """Test parse_args returns correct dictionary for valid input."""
+    from awsEC2pricing import parse_args
+    from includes import REGION_NVIRGINIA
+    argv = ['-t', '4', '8', 'Linux', REGION_NVIRGINIA]
+    result = parse_args(testing=False, argv=argv)
+    assert isinstance(result, dict)
+    assert result['text_only'] is True
+    assert result['vcpu'] == 4
+    assert result['ram'] == 8
+    assert result['os'] == 'Linux'
+    assert result['region'] == REGION_NVIRGINIA
+
 def test_adapt_date_and_convert_date():
     """Test adapt_date and convert_date functions."""
     from includes import adapt_date, convert_date
