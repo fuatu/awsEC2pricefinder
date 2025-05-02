@@ -182,6 +182,14 @@ def test_parse_args_no_args(monkeypatch):
     with pytest.raises(SystemExit):
         parse_args()
 
+def test_parse_args_vcpu_too_high(monkeypatch):
+    """Test parse_args with vCPU argument above allowed maximum."""
+    from awsEC2pricing import parse_args
+    test_argv = ['-t', '129', '16', 'Linux', 'us-east-1']
+    monkeypatch.setattr('sys.argv', ['awsEC2pricing.py'] + test_argv)
+    with pytest.raises(SystemExit):
+        parse_args()
+
 def test_adapt_date_and_convert_date():
     """Test adapt_date and convert_date functions."""
     from includes import adapt_date, convert_date
@@ -210,6 +218,41 @@ def test_awsp_get_boto_clients_invalid_region(monkeypatch):
     pricing, ec2 = ap.get_boto_clients("Nonexistent")
     assert pricing is not None
     assert ec2 is not None
+
+def test_get_ec2_pricing(monkeypatch):
+    """Test AWSPricing.get_ec2_pricing for both up-to-date and update branches."""
+    from includes import AWSPricing, P_REGION
+
+    # Mock database with are_records_old returning False (up-to-date)
+    mock_db = MagicMock()
+    mock_db.are_records_old.return_value = False
+    ap = AWSPricing()
+    ap.db = mock_db
+    # Should print and return early
+    ap.get_ec2_pricing(P_REGION)
+    mock_db.are_records_old.assert_called_with(P_REGION)
+
+    # Now test the update branch (are_records_old returns True)
+    mock_db.are_records_old.return_value = True
+    mock_db.delete_records.return_value = None
+    mock_db.insert_records.return_value = None
+
+    # Mock pricing client and get_products
+    mock_pricing = MagicMock()
+    # First call returns a response with PriceList and NextToken
+    mock_pricing.get_products.side_effect = [
+        {'PriceList': ['{"dummy": "price1"}'], 'NextToken': 'token1'},
+        {'PriceList': ['{"dummy": "price2"}'], 'NextToken': None}
+    ]
+    # Patch get_boto_clients to return our mock_pricing
+    monkeypatch.setattr(ap, "get_boto_clients", lambda region: (mock_pricing, None))
+    # Patch _parse_price_list_item to return a tuple for each price
+    monkeypatch.setattr(ap, "_parse_price_list_item", lambda price, region: (price, region))
+
+    ap.get_ec2_pricing(P_REGION)
+    assert mock_db.delete_records.called
+    assert mock_db.insert_records.called
+    assert mock_pricing.get_products.call_count == 2
 
 def test_awsp_load_credentials_error(tmp_path, monkeypatch):
     """Test _load_credentials error handling."""

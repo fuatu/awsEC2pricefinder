@@ -1,0 +1,1050 @@
+diff --git a/.coverage b/.coverage
+index 98728ca..df70f6c 100644
+Binary files a/.coverage and b/.coverage differ
+diff --git a/.gitignore b/.gitignore
+index 62a2739..2abfc91 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -5,3 +5,4 @@ awsprices.db
+ .vscode
+ venv
+ .python-version
++.DS_Store
+\ No newline at end of file
+diff --git a/awsEC2pricing.py b/awsEC2pricing.py
+index 5c1cad9..da69d2b 100644
+--- a/awsEC2pricing.py
++++ b/awsEC2pricing.py
+@@ -4,13 +4,18 @@ Provides both on-demand and spot pricing information along with interruption rat
+ """
+ 
+ import sys
+-from typing import Tuple, List, Optional, Union
++import argparse
++from typing import Tuple, List, Optional, Union, Dict, Any
+ from colorama import Fore, Style
+ from includes import (
+     list_regions, list_os, find_ec2, get_ec2_spot_price,
+     get_ec2_spot_interruption, print_help, region_map,
+-    P_VCPU, P_RAM, P_OS, P_REGION, REGION_NVIRGINIA
++    P_VCPU, P_RAM, P_OS, P_REGION, REGION_NVIRGINIA,
++    get_region_code, get_os_description
+ )
++import logging
++
++logger = logging.getLogger(__name__)
+ 
+ # Constants
+ MAX_EC2_RESULTS = 10
+@@ -19,107 +24,123 @@ DAYS_PER_MONTH = 30
+ MONTHLY_HOURS = HOURS_PER_DAY * DAYS_PER_MONTH
+ 
+ # Output format templates
+-HEADER_FORMAT = "{:<15} {:<6} {:<6} {:<10} {:<8} {:<11} {:<8} {:<10} {:<8}"
+-INSTANCE_FORMAT = "{:<15} {:<6.2f} {:<6.2f} {:<10} {:.5f}  {:<10.5f}  {:.5f}  {:<10.5f} {:<3}"
++HEADER_FORMAT = "{:<15} {:<6} {:<6} {:<10} {:<8} {:<11} {:<8} {:<10} {:<8} {:<10}"
++INSTANCE_FORMAT = "{:<15} {:<6.2f} {:<6.2f} {:<10} {:.5f}  {:<10.5f}  {:.5f}  {:<10.5f} {:<8} {:<10}"
+ SUMMARY_FORMAT = (
+     Style.RESET_ALL + "--------------------------\n" +
+     Fore.GREEN + " vCPU: {0:.2f}\n RAM: {1:.2f}\n OS: {2}\n Region: {3}\n" +
+     Style.RESET_ALL + "--------------------------"
+ )
+ 
++# Burstable instance pattern and baseline percentages
++# Based on AWS documentation: t3.nano has 5% baseline, t3.micro 10%, etc.
++BURSTABLE_INSTANCES = {
++    't2.nano': '5%',
++    't2.micro': '10%',
++    't2.small': '20%',
++    't2.medium': '40%',
++    't2.large': '60%',
++    't2.xlarge': '90%',
++    't2.2xlarge': '90%',
++    't3.nano': '5%',
++    't3.micro': '10%',
++    't3.small': '20%',
++    't3.medium': '20%',
++    't3.large': '30%',
++    't3.xlarge': '40%',
++    't3.2xlarge': '40%',
++    't3a.nano': '5%',
++    't3a.micro': '10%',
++    't3a.small': '20%',
++    't3a.medium': '20%',
++    't3a.large': '30%',
++    't3a.xlarge': '40%',
++    't3a.2xlarge': '40%',
++    't4g.nano': '5%',
++    't4g.micro': '10%',
++    't4g.small': '20%',
++    't4g.medium': '20%',
++    't4g.large': '30%',
++    't4g.xlarge': '40%',
++    't4g.2xlarge': '40%',
++}
++
++def get_burstable_info(instance_name: str) -> str:
++    """
++    Returns burstable baseline percentage for given instance if it's a burstable instance.
++    
++    Args:
++        instance_name: The name of the EC2 instance
++        
++    Returns:
++        Baseline percentage as string or empty string if not burstable
++    """
++    return BURSTABLE_INSTANCES.get(instance_name, "")
+ 
+-def get_sanitized_args(testing: bool) -> List[str]:
++
++def parse_args(testing: bool = False, argv: Optional[List[str]] = None) -> Dict[str, Any]:
+     """
+-    Get and sanitize command line arguments.
++    Parse command line arguments using argparse for secure handling.
+     
+     Args:
+         testing: Boolean indicating if in test mode
++        argv: Optional list of arguments to parse (for testing)
+     
+     Returns:
+-        List of sanitized command line arguments
++        Dictionary containing parsed arguments
+     """
+     if testing:
+-        return ['', '-t', '8', '16', 'Linux', REGION_NVIRGINIA]
++        # Return predefined arguments for testing mode
++        return {
++            'text_only': True, 
++            'vcpu': 8.0, 
++            'ram': 16.0,
++            'os': 'Linux',
++            'region': REGION_NVIRGINIA
++        }
+     
+-    # Create a copy of sys.argv to avoid modifying the original
+-    args = sys.argv.copy()
++    parser = argparse.ArgumentParser(
++        description='AWS EC2 Price Finder - Find and compare EC2 instance prices including spot instances',
++        add_help=False  # We'll handle the help manually to keep existing format
++    )
+     
+-    # Sanitize and validate each argument
+-    sanitized_args = []
+-    for arg in args:
+-        # Remove any potentially dangerous characters
+-        cleaned_arg = ''.join(c for c in str(arg) if c.isalnum() or c in '.-_')
+-        sanitized_args.append(cleaned_arg)
++    # Add arguments
++    parser.add_argument('-t', action='store_true', dest='text_only',
++                        help='Run in terminal mode')
++    parser.add_argument('-h', action='store_true', dest='show_help',
++                        help='Show help information')
++    parser.add_argument('vcpu', nargs='?', type=float, default=P_VCPU, 
++                        help='Number of virtual CPUs')
++    parser.add_argument('ram', nargs='?', type=float, default=P_RAM,
++                        help='Amount of RAM in GB')
++    parser.add_argument('os', nargs='?', default=P_OS, choices=list_os,
++                        help='Operating system')
++    parser.add_argument('region', nargs='?', default=P_REGION, choices=list_regions,
++                        help='AWS region')
+     
+-    return sanitized_args
+-
+-def get_sys_argv(pp_args: List[str]) -> Tuple[bool, bool, float, float, str, str]:
+-    """
+-    Parse and validate command line arguments.
++    # Use provided argv or sys.argv
++    args_list = argv if argv is not None else sys.argv[1:]
+ 
+-    Args:
+-        pp_args: List of command line arguments
+-
+-    Returns:
+-        Tuple containing:
+-        - success: Boolean indicating if parsing was successful
+-        - text_only: Boolean for text-only output
+-        - vcpu: Number of virtual CPUs
+-        - ram: Amount of RAM in GB
+-        - os: Operating system
+-        - region: AWS region
+-
+-    Raises:
+-        ValueError: If numeric arguments cannot be parsed
+-    """
+-    if len(pp_args) == 1:
++    if not args_list:
+         print('no parameters. Check help with -h')
+-        return False, False, 0, 0, '', ''
+-
+-    if pp_args[1] == '-h':
++        sys.exit(1)
++        
++    if '-h' in args_list:
+         print_help()
+-        return False, False, 0, 0, '', ''
+-
+-    text_only = pp_args[1] == '-t'
+-    if not text_only and pp_args[1] != '-h':
+-        print('incorrect parameter check help with -h')
+-        return False, False, 0, 0, '', ''
+-
+-    # Default values
+-    vcpu, ram = P_VCPU, P_RAM
+-    os_type, region = P_OS, P_REGION
+-
+-    # Parse vCPU
+-    if len(pp_args) > 2:
+-        try:
+-            vcpu = float(pp_args[2])
+-        except ValueError:
+-            print('Please use an integer or floating number for vCPU')
+-            return False, False, 0, 0, '', ''
+-
+-    # Parse RAM
+-    if len(pp_args) > 3:
+-        try:
+-            ram = float(pp_args[3])
+-        except ValueError:
+-            print('Please use an integer or floating number for RAM')
+-            return False, False, 0, 0, '', ''
+-
+-    # Parse OS
+-    if len(pp_args) > 4:
+-        os_type = pp_args[4]
+-        if os_type not in list_os:
+-            print("Enter one of the values for os:", list_os)
+-            return False, False, 0, 0, '', ''
+-
+-    # Parse Region
+-    if len(pp_args) > 5:
+-        region = pp_args[5]
+-        if region not in list_regions:
+-            print("Enter one of the values for regions. Check help with -h")
+-            return False, False, 0, 0, '', ''
+-
+-    return True, text_only, vcpu, ram, os_type, region
++        sys.exit(0)
++        
++    args = parser.parse_args(args_list)
++    
++    # Validate numeric arguments
++    if args.vcpu <= 0 or args.vcpu > 128:
++        print('vCPU must be a positive number between 1 and 128')
++        sys.exit(1)
++        
++    if args.ram <= 0 or args.ram > 1024:
++        print('RAM must be a positive number between 1 and 1024')
++        sys.exit(1)
++    
++    return vars(args)
+ 
+ def print_instance_details(
+     result_row: tuple,
+@@ -142,10 +163,11 @@ def print_instance_details(
+ 
+     spot_price_monthly = spot_price * MONTHLY_HOURS
+     price_monthly = price * MONTHLY_HOURS
++    burstable_info = get_burstable_info(instance)
+ 
+     print(Fore.GREEN + INSTANCE_FORMAT.format(
+         instance, vcpu, ram, os_type, price, price_monthly,
+-        spot_price, spot_price_monthly, kill_rate
++        spot_price, spot_price_monthly, kill_rate, burstable_info
+     ))
+ 
+ def main(testing: bool = False) -> Optional[bool]:
+@@ -158,26 +180,31 @@ def main(testing: bool = False) -> Optional[bool]:
+     Returns:
+         Boolean indicating success in test mode, None otherwise
+     """
+-    pp_args = get_sanitized_args(testing)
+-    success, text_only, vcpu, ram, os_type, region = get_sys_argv(pp_args)
+-
+-    if not success:
+-        sys.exit()
+-
+-    if text_only:
+-        result = find_ec2(cpu=vcpu, ram=ram, os=os_type, region=region, limit=MAX_EC2_RESULTS)
+-        print(Fore.GREEN + SUMMARY_FORMAT.format(vcpu, ram, os_type, region))
++    args = parse_args(testing)
++    
++    if args['text_only']:
++        result = find_ec2(
++            cpu=args['vcpu'], 
++            ram=args['ram'], 
++            os=args['os'], 
++            region=args['region'], 
++            limit=MAX_EC2_RESULTS
++        )
++        
++        print(Fore.GREEN + SUMMARY_FORMAT.format(
++            args['vcpu'], args['ram'], args['os'], args['region']
++        ))
+         
+         print(Fore.LIGHTGREEN_EX + HEADER_FORMAT.format(
+-            "Instance", "vCPU", "RAM", "OS", "PriceH", "PriceM", "SpotH", "SpotM", "KillRate"
++            "Instance", "vCPU", "RAM", "OS", "PriceH", "PriceM", "SpotH", "SpotM", "KillRate", "Burstable"
+         ))
+ 
+         instances = [r[1] for r in result]
+-        spot_prices = get_ec2_spot_price(instances=instances, os=os_type, region=region)
++        spot_prices = get_ec2_spot_price(instances=instances, os=args['os'], region=args['region'])
+         spot_interrupt_rates = get_ec2_spot_interruption(
+             instances=instances,
+-            os=os_type,
+-            region=region_map[region]
++            os=args['os'],
++            region=get_region_code(args['region'])
+         )
+ 
+         for row in result:
+@@ -192,4 +219,5 @@ def main(testing: bool = False) -> Optional[bool]:
+             return True
+ 
+ if __name__ == '__main__':
++    logging.basicConfig(level=logging.INFO)
+     main()
+diff --git a/coverage b/coverage
+new file mode 100644
+index 0000000..98728ca
+Binary files /dev/null and b/coverage differ
+diff --git a/coverage.xml b/coverage.xml
+new file mode 100644
+index 0000000..780883d
+--- /dev/null
++++ b/coverage.xml
+@@ -0,0 +1,433 @@
++<?xml version="1.0" ?>
++<coverage version="7.6.4" timestamp="1746176271890" lines-valid="404" lines-covered="367" line-rate="0.9084" branches-covered="0" branches-valid="0" branch-rate="0" complexity="0">
++	<!-- Generated by coverage.py: https://coverage.readthedocs.io/en/7.6.4 -->
++	<!-- Based on https://raw.githubusercontent.com/cobertura/web/master/htdocs/xml/coverage-04.dtd -->
++	<sources>
++		<source>/Users/fuatulugay/Projects/awsEC2pricefinder</source>
++	</sources>
++	<packages>
++		<package name="." line-rate="0.9084" branch-rate="0" complexity="0">
++			<classes>
++				<class name="awsEC2pricing.py" filename="awsEC2pricing.py" complexity="0" line-rate="0.9565" branch-rate="0">
++					<methods/>
++					<lines>
++						<line number="6" hits="1"/>
++						<line number="7" hits="1"/>
++						<line number="8" hits="1"/>
++						<line number="9" hits="1"/>
++						<line number="10" hits="1"/>
++						<line number="16" hits="1"/>
++						<line number="18" hits="1"/>
++						<line number="21" hits="1"/>
++						<line number="22" hits="1"/>
++						<line number="23" hits="1"/>
++						<line number="24" hits="1"/>
++						<line number="27" hits="1"/>
++						<line number="28" hits="1"/>
++						<line number="29" hits="1"/>
++						<line number="37" hits="1"/>
++						<line number="68" hits="1"/>
++						<line number="78" hits="1"/>
++						<line number="81" hits="1"/>
++						<line number="92" hits="1"/>
++						<line number="94" hits="1"/>
++						<line number="102" hits="1"/>
++						<line number="108" hits="1"/>
++						<line number="110" hits="1"/>
++						<line number="112" hits="1"/>
++						<line number="114" hits="1"/>
++						<line number="116" hits="1"/>
++						<line number="118" hits="1"/>
++						<line number="122" hits="1"/>
++						<line number="124" hits="1"/>
++						<line number="125" hits="1"/>
++						<line number="126" hits="1"/>
++						<line number="128" hits="1"/>
++						<line number="129" hits="1"/>
++						<line number="130" hits="1"/>
++						<line number="132" hits="1"/>
++						<line number="135" hits="1"/>
++						<line number="136" hits="1"/>
++						<line number="137" hits="1"/>
++						<line number="139" hits="1"/>
++						<line number="140" hits="1"/>
++						<line number="141" hits="1"/>
++						<line number="143" hits="0"/>
++						<line number="145" hits="1"/>
++						<line number="158" hits="1"/>
++						<line number="159" hits="1"/>
++						<line number="160" hits="1"/>
++						<line number="161" hits="1"/>
++						<line number="162" hits="1"/>
++						<line number="164" hits="1"/>
++						<line number="165" hits="1"/>
++						<line number="166" hits="1"/>
++						<line number="168" hits="1"/>
++						<line number="173" hits="1"/>
++						<line number="183" hits="1"/>
++						<line number="185" hits="1"/>
++						<line number="186" hits="1"/>
++						<line number="194" hits="1"/>
++						<line number="198" hits="1"/>
++						<line number="202" hits="1"/>
++						<line number="203" hits="1"/>
++						<line number="204" hits="1"/>
++						<line number="210" hits="1"/>
++						<line number="211" hits="1"/>
++						<line number="217" hits="1"/>
++						<line number="218" hits="1"/>
++						<line number="219" hits="1"/>
++						<line number="221" hits="1"/>
++						<line number="222" hits="0"/>
++						<line number="223" hits="0"/>
++					</lines>
++				</class>
++				<class name="includes.py" filename="includes.py" complexity="0" line-rate="0.809" branch-rate="0">
++					<methods/>
++					<lines>
++						<line number="9" hits="1"/>
++						<line number="10" hits="1"/>
++						<line number="11" hits="1"/>
++						<line number="12" hits="1"/>
++						<line number="13" hits="1"/>
++						<line number="14" hits="1"/>
++						<line number="15" hits="1"/>
++						<line number="16" hits="1"/>
++						<line number="17" hits="1"/>
++						<line number="18" hits="1"/>
++						<line number="21" hits="1"/>
++						<line number="22" hits="1"/>
++						<line number="25" hits="1"/>
++						<line number="26" hits="1"/>
++						<line number="27" hits="1"/>
++						<line number="28" hits="1"/>
++						<line number="29" hits="1"/>
++						<line number="30" hits="1"/>
++						<line number="31" hits="1"/>
++						<line number="32" hits="1"/>
++						<line number="35" hits="1"/>
++						<line number="36" hits="1"/>
++						<line number="39" hits="1"/>
++						<line number="50" hits="1"/>
++						<line number="57" hits="1"/>
++						<line number="82" hits="1"/>
++						<line number="83" hits="1"/>
++						<line number="85" hits="1"/>
++						<line number="87" hits="1"/>
++						<line number="89" hits="1"/>
++						<line number="91" hits="1"/>
++						<line number="94" hits="1"/>
++						<line number="95" hits="1"/>
++						<line number="97" hits="1"/>
++						<line number="100" hits="1"/>
++						<line number="101" hits="1"/>
++						<line number="102" hits="1"/>
++						<line number="104" hits="1"/>
++						<line number="106" hits="1"/>
++						<line number="111" hits="1"/>
++						<line number="113" hits="1"/>
++						<line number="114" hits="1"/>
++						<line number="115" hits="1"/>
++						<line number="127" hits="1"/>
++						<line number="128" hits="1"/>
++						<line number="130" hits="1"/>
++						<line number="132" hits="1"/>
++						<line number="133" hits="1"/>
++						<line number="134" hits="1"/>
++						<line number="139" hits="1"/>
++						<line number="141" hits="1"/>
++						<line number="143" hits="1"/>
++						<line number="144" hits="1"/>
++						<line number="145" hits="1"/>
++						<line number="146" hits="1"/>
++						<line number="148" hits="1"/>
++						<line number="150" hits="1"/>
++						<line number="151" hits="1"/>
++						<line number="152" hits="1"/>
++						<line number="153" hits="1"/>
++						<line number="155" hits="1"/>
++						<line number="156" hits="1"/>
++						<line number="158" hits="1"/>
++						<line number="159" hits="1"/>
++						<line number="161" hits="1"/>
++						<line number="163" hits="1"/>
++						<line number="164" hits="1"/>
++						<line number="165" hits="1"/>
++						<line number="171" hits="1"/>
++						<line number="172" hits="1"/>
++						<line number="174" hits="1"/>
++						<line number="177" hits="1"/>
++						<line number="178" hits="1"/>
++						<line number="179" hits="1"/>
++						<line number="181" hits="1"/>
++						<line number="183" hits="1"/>
++						<line number="184" hits="1"/>
++						<line number="185" hits="1"/>
++						<line number="186" hits="1"/>
++						<line number="187" hits="1"/>
++						<line number="188" hits="1"/>
++						<line number="190" hits="1"/>
++						<line number="192" hits="1"/>
++						<line number="197" hits="1"/>
++						<line number="199" hits="1"/>
++						<line number="201" hits="0"/>
++						<line number="202" hits="0"/>
++						<line number="203" hits="0"/>
++						<line number="205" hits="0"/>
++						<line number="206" hits="0"/>
++						<line number="207" hits="0"/>
++						<line number="209" hits="0"/>
++						<line number="214" hits="0"/>
++						<line number="215" hits="0"/>
++						<line number="217" hits="0"/>
++						<line number="218" hits="0"/>
++						<line number="222" hits="0"/>
++						<line number="223" hits="0"/>
++						<line number="225" hits="0"/>
++						<line number="227" hits="0"/>
++						<line number="228" hits="0"/>
++						<line number="229" hits="0"/>
++						<line number="230" hits="0"/>
++						<line number="232" hits="0"/>
++						<line number="233" hits="0"/>
++						<line number="234" hits="0"/>
++						<line number="236" hits="0"/>
++						<line number="238" hits="1"/>
++						<line number="240" hits="1"/>
++						<line number="241" hits="1"/>
++						<line number="242" hits="1"/>
++						<line number="243" hits="0"/>
++						<line number="244" hits="0"/>
++						<line number="246" hits="0"/>
++						<line number="247" hits="0"/>
++						<line number="249" hits="0"/>
++						<line number="250" hits="0"/>
++						<line number="259" hits="1"/>
++						<line number="260" hits="1"/>
++						<line number="262" hits="1"/>
++						<line number="264" hits="1"/>
++						<line number="265" hits="1"/>
++						<line number="267" hits="1"/>
++						<line number="268" hits="1"/>
++						<line number="269" hits="1"/>
++						<line number="274" hits="1"/>
++						<line number="275" hits="1"/>
++						<line number="276" hits="1"/>
++						<line number="277" hits="1"/>
++						<line number="278" hits="1"/>
++						<line number="280" hits="1"/>
++						<line number="282" hits="1"/>
++						<line number="284" hits="1"/>
++						<line number="285" hits="1"/>
++						<line number="293" hits="1"/>
++						<line number="294" hits="1"/>
++						<line number="295" hits="1"/>
++						<line number="297" hits="1"/>
++						<line number="298" hits="1"/>
++						<line number="299" hits="1"/>
++						<line number="300" hits="1"/>
++						<line number="301" hits="0"/>
++						<line number="302" hits="0"/>
++						<line number="303" hits="0"/>
++						<line number="305" hits="1"/>
++						<line number="306" hits="1"/>
++						<line number="308" hits="1"/>
++						<line number="310" hits="1"/>
++						<line number="312" hits="1"/>
++						<line number="314" hits="1"/>
++						<line number="316" hits="1"/>
++						<line number="318" hits="1"/>
++						<line number="320" hits="1"/>
++						<line number="321" hits="1"/>
++						<line number="322" hits="1"/>
++						<line number="323" hits="1"/>
++						<line number="324" hits="1"/>
++						<line number="325" hits="1"/>
++						<line number="326" hits="1"/>
++						<line number="327" hits="1"/>
++						<line number="328" hits="1"/>
++						<line number="329" hits="1"/>
++						<line number="330" hits="1"/>
++						<line number="331" hits="1"/>
++						<line number="332" hits="1"/>
++						<line number="333" hits="1"/>
++						<line number="334" hits="1"/>
++						<line number="335" hits="1"/>
++						<line number="338" hits="1"/>
++						<line number="341" hits="0"/>
++						<line number="342" hits="0"/>
++						<line number="343" hits="0"/>
++						<line number="345" hits="1"/>
++						<line number="347" hits="1"/>
++						<line number="348" hits="1"/>
++						<line number="350" hits="1"/>
++						<line number="352" hits="1"/>
++						<line number="353" hits="1"/>
++					</lines>
++				</class>
++				<class name="test_awspricing.py" filename="test_awspricing.py" complexity="0" line-rate="1" branch-rate="0">
++					<methods/>
++					<lines>
++						<line number="5" hits="1"/>
++						<line number="6" hits="1"/>
++						<line number="7" hits="1"/>
++						<line number="8" hits="1"/>
++						<line number="9" hits="1"/>
++						<line number="11" hits="1"/>
++						<line number="16" hits="1"/>
++						<line number="23" hits="1"/>
++						<line number="24" hits="1"/>
++						<line number="26" hits="1"/>
++						<line number="27" hits="1"/>
++						<line number="29" hits="1"/>
++						<line number="30" hits="1"/>
++						<line number="32" hits="1"/>
++						<line number="33" hits="1"/>
++						<line number="34" hits="1"/>
++						<line number="36" hits="1"/>
++						<line number="37" hits="1"/>
++						<line number="39" hits="1"/>
++						<line number="40" hits="1"/>
++						<line number="47" hits="1"/>
++						<line number="49" hits="1"/>
++						<line number="51" hits="1"/>
++						<line number="53" hits="1"/>
++						<line number="55" hits="1"/>
++						<line number="56" hits="1"/>
++						<line number="57" hits="1"/>
++						<line number="61" hits="1"/>
++						<line number="63" hits="1"/>
++						<line number="65" hits="1"/>
++						<line number="66" hits="1"/>
++						<line number="67" hits="1"/>
++						<line number="68" hits="1"/>
++						<line number="69" hits="1"/>
++						<line number="70" hits="1"/>
++						<line number="71" hits="1"/>
++						<line number="72" hits="1"/>
++						<line number="74" hits="1"/>
++						<line number="76" hits="1"/>
++						<line number="77" hits="1"/>
++						<line number="78" hits="1"/>
++						<line number="79" hits="1"/>
++						<line number="81" hits="1"/>
++						<line number="82" hits="1"/>
++						<line number="84" hits="1"/>
++						<line number="85" hits="1"/>
++						<line number="87" hits="1"/>
++						<line number="88" hits="1"/>
++						<line number="90" hits="1"/>
++						<line number="91" hits="1"/>
++						<line number="100" hits="1"/>
++						<line number="101" hits="1"/>
++						<line number="106" hits="1"/>
++						<line number="107" hits="1"/>
++						<line number="109" hits="1"/>
++						<line number="110" hits="1"/>
++						<line number="112" hits="1"/>
++						<line number="113" hits="1"/>
++						<line number="116" hits="1"/>
++						<line number="117" hits="1"/>
++						<line number="122" hits="1"/>
++						<line number="123" hits="1"/>
++						<line number="125" hits="1"/>
++						<line number="126" hits="1"/>
++						<line number="127" hits="1"/>
++						<line number="128" hits="1"/>
++						<line number="130" hits="1"/>
++						<line number="133" hits="1"/>
++						<line number="134" hits="1"/>
++						<line number="135" hits="1"/>
++						<line number="137" hits="1"/>
++						<line number="139" hits="1"/>
++						<line number="140" hits="1"/>
++						<line number="141" hits="1"/>
++						<line number="143" hits="1"/>
++						<line number="145" hits="1"/>
++						<line number="146" hits="1"/>
++						<line number="147" hits="1"/>
++						<line number="148" hits="1"/>
++						<line number="149" hits="1"/>
++						<line number="150" hits="1"/>
++						<line number="151" hits="1"/>
++						<line number="152" hits="1"/>
++						<line number="153" hits="1"/>
++						<line number="155" hits="1"/>
++						<line number="156" hits="1"/>
++						<line number="157" hits="1"/>
++						<line number="158" hits="1"/>
++						<line number="159" hits="1"/>
++						<line number="161" hits="1"/>
++						<line number="163" hits="1"/>
++						<line number="164" hits="1"/>
++						<line number="165" hits="1"/>
++						<line number="166" hits="1"/>
++						<line number="167" hits="1"/>
++						<line number="169" hits="1"/>
++						<line number="171" hits="1"/>
++						<line number="172" hits="1"/>
++						<line number="173" hits="1"/>
++						<line number="174" hits="1"/>
++						<line number="175" hits="1"/>
++						<line number="177" hits="1"/>
++						<line number="179" hits="1"/>
++						<line number="180" hits="1"/>
++						<line number="181" hits="1"/>
++						<line number="182" hits="1"/>
++						<line number="183" hits="1"/>
++						<line number="185" hits="1"/>
++						<line number="187" hits="1"/>
++						<line number="188" hits="1"/>
++						<line number="189" hits="1"/>
++						<line number="190" hits="1"/>
++						<line number="192" hits="1"/>
++						<line number="194" hits="1"/>
++						<line number="196" hits="1"/>
++						<line number="197" hits="1"/>
++						<line number="198" hits="1"/>
++						<line number="199" hits="1"/>
++						<line number="200" hits="1"/>
++						<line number="202" hits="1"/>
++						<line number="204" hits="1"/>
++						<line number="206" hits="1"/>
++						<line number="209" hits="1"/>
++						<line number="210" hits="1"/>
++						<line number="211" hits="1"/>
++						<line number="212" hits="1"/>
++						<line number="214" hits="1"/>
++						<line number="216" hits="1"/>
++						<line number="218" hits="1"/>
++						<line number="219" hits="1"/>
++						<line number="220" hits="1"/>
++						<line number="221" hits="1"/>
++						<line number="223" hits="1"/>
++						<line number="225" hits="1"/>
++						<line number="226" hits="1"/>
++						<line number="229" hits="1"/>
++						<line number="231" hits="1"/>
++						<line number="233" hits="1"/>
++						<line number="234" hits="1"/>
++						<line number="236" hits="1"/>
++						<line number="238" hits="1"/>
++						<line number="239" hits="1"/>
++						<line number="242" hits="1"/>
++						<line number="243" hits="1"/>
++						<line number="244" hits="1"/>
++						<line number="245" hits="1"/>
++						<line number="246" hits="1"/>
++						<line number="247" hits="1"/>
++						<line number="248" hits="1"/>
++						<line number="250" hits="1"/>
++						<line number="252" hits="1"/>
++						<line number="253" hits="1"/>
++						<line number="256" hits="1"/>
++						<line number="258" hits="1"/>
++						<line number="259" hits="1"/>
++						<line number="260" hits="1"/>
++						<line number="261" hits="1"/>
++					</lines>
++				</class>
++			</classes>
++		</package>
++	</packages>
++</coverage>
+diff --git a/includes.py b/includes.py
+index fa6287a..0fda780 100644
+--- a/includes.py
++++ b/includes.py
+@@ -15,6 +15,11 @@ import yaml
+ import boto3
+ import requests
+ from colorama import Fore, Style
++import logging
++
++# Configure logging
++logging.basicConfig(level=logging.INFO)
++logger = logging.getLogger(__name__)
+ 
+ # Default configuration values
+ P_VCPU = 2
+@@ -179,7 +184,8 @@ class AWSPricing:
+             with open('credentials.yaml', 'r') as stream:
+                 return yaml.safe_load(stream)['credentials']
+         except (yaml.YAMLError, FileNotFoundError) as e:
+-            raise Exception("Failed to load credentials: " + str(e))
++            logger.error(f"Failed to load credentials: {e}")
++            raise
+ 
+     def get_boto_clients(self, region: Optional[str] = None) -> Tuple[Any, Any]:
+         """Create boto3 clients for pricing and EC2."""
+@@ -267,7 +273,8 @@ class AWSPricing:
+                 )
+                 if spot['SpotPriceHistory']:
+                     results[instance] = float(spot['SpotPriceHistory'][0]['SpotPrice'])
+-            except (IndexError, KeyError):
++            except (IndexError, KeyError) as e:
++                logger.warning(f"Error retrieving spot price for {instance}: {e}")
+                 continue
+ 
+         return results
+@@ -291,14 +298,23 @@ class AWSPricing:
+                 try:
+                     rate = spot_advisor[region][os][instance]['r']
+                     results[instance] = rates[rate]
+-                except (KeyError, IndexError):
++                except (KeyError, IndexError) as e:
++                    logger.warning(f"Error retrieving interruption rate for {instance}: {e}")
+                     continue
+ 
+-        except requests.exceptions.RequestException:
+-            pass
++        except requests.exceptions.RequestException as e:
++            logger.error(f"Failed to fetch spot advisor data: {e}")
+ 
+         return results
+ 
++def get_region_code(region_name: str) -> str:
++    """Return the AWS region code for a given region name."""
++    return region_map.get(region_name, region_name)
++
++def get_os_description(os_name: str) -> str:
++    """Return the AWS OS description for a given OS name."""
++    return os_map.get(os_name, os_name)
++
+ def print_help() -> None:
+     """Print help information to the terminal."""
+     print("----------------------------------")
+diff --git a/test_awspricing.py b/test_awspricing.py
+index 9c16dbf..69f13b8 100644
+--- a/test_awspricing.py
++++ b/test_awspricing.py
+@@ -3,9 +3,9 @@ Test suite for AWS EC2 Price Finder
+ """
+ 
+ import pytest
++import sys
+ from unittest.mock import patch, MagicMock
+ from datetime import date
+-import yaml
+ import sqlite3
+ 
+ from includes import (
+@@ -13,7 +13,11 @@ from includes import (
+     REGION_NVIRGINIA, region_map, P_OS,
+     find_ec2, get_ec2_spot_price, get_ec2_spot_interruption
+ )
+-from awsEC2pricing import get_sys_argv, main
++from awsEC2pricing import (
++    main, parse_args, get_burstable_info, 
++    print_instance_details, BURSTABLE_INSTANCES,
++    MONTHLY_HOURS, INSTANCE_FORMAT
++)
+ 
+ # Test data
+ TEST_INSTANCES = ['t3.medium', 't2.medium', 't3.large', 'm6g.large']
+@@ -59,16 +63,10 @@ def test_database_creation(db_manager):
+ def test_database_operations(db_manager):
+     """Test database CRUD operations."""
+     test_record = ('t3.medium', 2, 4, 'Linux', 0.0416, REGION_NVIRGINIA, date.today())
+-    
+-    # Test insert
+     db_manager.insert_records([test_record])
+-    
+-    # Test query
+     results = db_manager.find_ec2(1, 2, 'Linux', REGION_NVIRGINIA, 1)
+     assert len(results) == 1
+-    assert results[0][1] == 't3.medium'  # Check instance type
+-    
+-    # Test delete
++    assert results[0][1] == 't3.medium'
+     db_manager.delete_records(REGION_NVIRGINIA)
+     results = db_manager.find_ec2(1, 2, 'Linux', REGION_NVIRGINIA, 1)
+     assert len(results) == 0
+@@ -76,7 +74,6 @@ def test_database_operations(db_manager):
+ def test_records_expiry(db_manager):
+     """Test record expiry checking."""
+     assert db_manager.are_records_old(REGION_NVIRGINIA) is True
+-    
+     test_record = ('t3.medium', 2, 4, 'Linux', 0.0416, REGION_NVIRGINIA, date.today())
+     db_manager.insert_records([test_record])
+     assert db_manager.are_records_old(REGION_NVIRGINIA) is False
+@@ -101,7 +98,6 @@ def test_spot_interruption_rates(mock_get):
+         }
+     }'''
+     mock_get.return_value = mock_response
+-
+     rates = get_ec2_spot_interruption(
+         instances=['t3.medium'],
+         os='Linux',
+@@ -118,7 +114,6 @@ def test_spot_prices(mock_session):
+         'SpotPriceHistory': [{'SpotPrice': '0.0416'}]
+     }
+     mock_session.return_value.client.return_value = mock_ec2
+-
+     prices = get_ec2_spot_price(
+         instances=['t3.medium'],
+         os=P_OS,
+@@ -127,35 +122,6 @@ def test_spot_prices(mock_session):
+     assert len(prices) == 1
+     assert prices['t3.medium'] == 0.0416
+ 
+-def test_get_sys_argv_positive():
+-    """Test command line argument parsing - positive cases."""
+-    success, text_only, pvcpu, pram, pos, pregion = get_sys_argv(
+-        ['', '-t', '8', '16', 'Linux', REGION_NVIRGINIA]
+-    )
+-    assert success
+-    assert text_only is True
+-    assert pvcpu == 8
+-    assert pram == 16
+-    assert pos == 'Linux'
+-    assert pregion == REGION_NVIRGINIA
+-
+-def test_get_sys_argv_help():
+-    """Test help command line argument."""
+-    success, *_ = get_sys_argv(['', '-h'])
+-    assert not success
+-
+-@pytest.mark.parametrize("args,expected", [
+-    (['', '-x'], False),  # incorrect parameter
+-    (['', '-t', 'x'], False),  # incorrect CPU
+-    (['', '-t', '4', 'x'], False),  # incorrect RAM
+-    (['', '-t', '4', '8', 'x'], False),  # incorrect OS
+-    (['', '-t', '4', '8', 'Linux', 'x'], False),  # incorrect region
+-])
+-def test_get_sys_argv_negative(args, expected):
+-    """Test command line argument parsing - negative cases."""
+-    success, *_ = get_sys_argv(args)
+-    assert success == expected
+-
+ @patch('awsEC2pricing.find_ec2')
+ @patch('awsEC2pricing.get_ec2_spot_price')
+ @patch('awsEC2pricing.get_ec2_spot_interruption')
+@@ -166,5 +132,130 @@ def test_main(mock_interrupt, mock_spot, mock_find):
+     ]
+     mock_spot.return_value = {'t3.medium': 0.0416}
+     mock_interrupt.return_value = {'t3.medium': '<5%'}
+-
+     assert main(testing=True) is True
++
++def test_get_burstable_info():
++    """Test the get_burstable_info function for burstable and non-burstable instances."""
++    assert get_burstable_info('m5.large') == ""
++    for instance, expected in BURSTABLE_INSTANCES.items():
++        assert get_burstable_info(instance) == expected
++
++def test_instance_and_header_format():
++    """Test HEADER_FORMAT and INSTANCE_FORMAT for correct formatting and columns."""
++    from awsEC2pricing import HEADER_FORMAT, INSTANCE_FORMAT
++    header = HEADER_FORMAT.format("Instance", "vCPU", "RAM", "OS", "OnDemand", "Monthly", "Spot", "SpotMonthly", "Interruption", "Burst")
++    assert "Instance" in header
++    assert "Burst" in header
++    instance = INSTANCE_FORMAT.format("t3.micro", 2, 4, "Linux", 0.0116, 8.395, 0.0035, 2.555, "<5%", "10%")
++    assert "t3.micro" in instance
++    assert "10%" in instance
++    assert "<5%" in instance
++def test_parse_args_invalid_vcpu(monkeypatch):
++    """Test parse_args with invalid vCPU argument."""
++    from awsEC2pricing import parse_args
++    test_argv = ['-t', '-1', '16', 'Linux', REGION_NVIRGINIA]
++    monkeypatch.setattr('sys.argv', ['awsEC2pricing.py'] + test_argv)
++    with pytest.raises(SystemExit):
++        parse_args()
++
++def test_parse_args_invalid_ram(monkeypatch):
++    """Test parse_args with invalid RAM argument."""
++    from awsEC2pricing import parse_args
++    test_argv = ['-t', '8', '-1', 'Linux', REGION_NVIRGINIA]
++    monkeypatch.setattr('sys.argv', ['awsEC2pricing.py'] + test_argv)
++    with pytest.raises(SystemExit):
++        parse_args()
++
++def test_parse_args_help(monkeypatch):
++    """Test parse_args with help argument."""
++    from awsEC2pricing import parse_args
++    test_argv = ['-h']
++    monkeypatch.setattr('sys.argv', ['awsEC2pricing.py'] + test_argv)
++    with pytest.raises(SystemExit):
++        parse_args()
++
++def test_parse_args_no_args(monkeypatch):
++    """Test parse_args with no arguments."""
++    from awsEC2pricing import parse_args
++    test_argv = []
++    monkeypatch.setattr('sys.argv', ['awsEC2pricing.py'] + test_argv)
++    with pytest.raises(SystemExit):
++        parse_args()
++
++def test_adapt_date_and_convert_date():
++    """Test adapt_date and convert_date functions."""
++    from includes import adapt_date, convert_date
++    d = date(2024, 5, 2)
++    s = adapt_date(d)
++    assert s == "2024-05-02"
++    # convert_date expects bytes
++    assert convert_date(b"2024-05-02") == d
++
++def test_get_region_code_and_os_description():
++    """Test get_region_code and get_os_description functions."""
++    from includes import get_region_code, get_os_description
++    assert get_region_code("US East (N. Virginia)") == "us-east-1"
++    assert get_region_code("Nonexistent") == "Nonexistent"
++    assert get_os_description("Linux") == "Linux/UNIX (Amazon VPC)"
++    assert get_os_description("OtherOS") == "OtherOS"
++
++def test_awsp_get_boto_clients_invalid_region(monkeypatch):
++    """Test get_boto_clients with invalid region fallback."""
++    from includes import AWSPricing
++    # Patch credentials to avoid file access
++    monkeypatch.setattr(AWSPricing, "_load_credentials", lambda self: {
++        "access_key": "x", "secret_key": "y", "default_region": "us-east-1"
++    })
++    ap = AWSPricing()
++    pricing, ec2 = ap.get_boto_clients("Nonexistent")
++    assert pricing is not None
++    assert ec2 is not None
++
++def test_awsp_load_credentials_error(tmp_path, monkeypatch):
++    """Test _load_credentials error handling."""
++    from includes import AWSPricing
++    # Patch open to FileNotFoundError
++    monkeypatch.setattr("builtins.open", lambda *a, **k: (_ for _ in ()).throw(FileNotFoundError("fail")))
++    ap = AWSPricing
++    with pytest.raises(Exception):
++        ap()._load_credentials()
++
++def test_parse_price_list_item_invalid(monkeypatch):
++    """Test _parse_price_list_item with invalid price data."""
++    from includes import AWSPricing
++    monkeypatch.setattr(AWSPricing, "_load_credentials", lambda self: {
++        "access_key": "x", "secret_key": "y", "default_region": "us-east-1"
++    })
++    ap = AWSPricing()
++    # Missing keys
++    assert ap._parse_price_list_item("{}", "us-east-1") is None
++    # Invalid price
++    bad_json = '{"terms": {"OnDemand": {}}, "product": {"attributes": {}}}'
++    assert ap._parse_price_list_item(bad_json, "us-east-1") is None
++
++def test_get_spot_prices_handles_exception(monkeypatch):
++    """Test get_spot_prices handles exceptions gracefully."""
++    from includes import AWSPricing
++    monkeypatch.setattr(AWSPricing, "_load_credentials", lambda self: {
++        "access_key": "x", "secret_key": "y", "default_region": "us-east-1"
++    })
++    ap = AWSPricing()
++    class FakeEC2:
++        def describe_spot_price_history(self, **kwargs):
++            raise KeyError("fail")
++    monkeypatch.setattr(ap, "get_boto_clients", lambda region: (None, FakeEC2()))
++    prices = ap.get_spot_prices(["t3.medium"], "Linux", "us-east-1")
++    assert prices["t3.medium"] == 0.0
++
++def test_get_spot_interruption_rates_handles_exception(monkeypatch):
++    """Test get_spot_interruption_rates handles exceptions gracefully."""
++    from includes import AWSPricing
++    monkeypatch.setattr(AWSPricing, "_load_credentials", lambda self: {
++        "access_key": "x", "secret_key": "y", "default_region": "us-east-1"
++    })
++    ap = AWSPricing()
++    # Patch requests.get to raise exception
++    import requests
++    monkeypatch.setattr(requests, "get", lambda url: (_ for _ in ()).throw(requests.exceptions.RequestException("fail")))
++    rates = ap.get_spot_interruption_rates(["t3.medium"], "Linux", "us-east-1")
++    assert rates["t3.medium"] == ""
