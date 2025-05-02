@@ -5,5 +5,4 @@ awsprices.db
 .vscode
 venv
 .python-version
-.coverage
 .DS_Store
