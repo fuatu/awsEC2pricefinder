@@ -13,6 +13,9 @@ from includes import (
     P_VCPU, P_RAM, P_OS, P_REGION, REGION_NVIRGINIA,
     get_region_code, get_os_description
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Constants
 MAX_EC2_RESULTS = 10
@@ -216,4 +219,5 @@ def main(testing: bool = False) -> Optional[bool]:
             return True
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     main()

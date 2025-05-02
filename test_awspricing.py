@@ -3,9 +3,9 @@ Test suite for AWS EC2 Price Finder
 """
 
 import pytest
+import sys
 from unittest.mock import patch, MagicMock
 from datetime import date
-import yaml
 import sqlite3
 
 from includes import (
@@ -13,7 +13,11 @@ from includes import (
     REGION_NVIRGINIA, region_map, P_OS,
     find_ec2, get_ec2_spot_price, get_ec2_spot_interruption
 )
-from awsEC2pricing import main
+from awsEC2pricing import (
+    main, parse_args, get_burstable_info, 
+    print_instance_details, BURSTABLE_INSTANCES,
+    MONTHLY_HOURS, INSTANCE_FORMAT
+)
 
 # Test data
 TEST_INSTANCES = ['t3.medium', 't2.medium', 't3.large', 'm6g.large']
@@ -59,16 +63,10 @@ def test_database_creation(db_manager):
 def test_database_operations(db_manager):
     """Test database CRUD operations."""
     test_record = ('t3.medium', 2, 4, 'Linux', 0.0416, REGION_NVIRGINIA, date.today())
-    
-    # Test insert
     db_manager.insert_records([test_record])
-    
-    # Test query
     results = db_manager.find_ec2(1, 2, 'Linux', REGION_NVIRGINIA, 1)
     assert len(results) == 1
-    assert results[0][1] == 't3.medium'  # Check instance type
-    
-    # Test delete
+    assert results[0][1] == 't3.medium'
     db_manager.delete_records(REGION_NVIRGINIA)
     results = db_manager.find_ec2(1, 2, 'Linux', REGION_NVIRGINIA, 1)
     assert len(results) == 0
@@ -76,7 +74,6 @@ def test_database_operations(db_manager):
 def test_records_expiry(db_manager):
     """Test record expiry checking."""
     assert db_manager.are_records_old(REGION_NVIRGINIA) is True
-    
     test_record = ('t3.medium', 2, 4, 'Linux', 0.0416, REGION_NVIRGINIA, date.today())
     db_manager.insert_records([test_record])
     assert db_manager.are_records_old(REGION_NVIRGINIA) is False
@@ -101,7 +98,6 @@ def test_spot_interruption_rates(mock_get):
         }
     }'''
     mock_get.return_value = mock_response
-
     rates = get_ec2_spot_interruption(
         instances=['t3.medium'],
         os='Linux',
@@ -118,7 +114,6 @@ def test_spot_prices(mock_session):
         'SpotPriceHistory': [{'SpotPrice': '0.0416'}]
     }
     mock_session.return_value.client.return_value = mock_ec2
-
     prices = get_ec2_spot_price(
         instances=['t3.medium'],
         os=P_OS,
@@ -137,5 +132,120 @@ def test_main(mock_interrupt, mock_spot, mock_find):
     ]
     mock_spot.return_value = {'t3.medium': 0.0416}
     mock_interrupt.return_value = {'t3.medium': '<5%'}
-
     assert main(testing=True) is True
+
+def test_get_burstable_info():
+    """Test the get_burstable_info function for burstable and non-burstable instances."""
+    assert get_burstable_info('m5.large') == ""
+    for instance, expected in BURSTABLE_INSTANCES.items():
+        assert get_burstable_info(instance) == expected
+
+def test_parse_args_invalid_vcpu(monkeypatch):
+    """Test parse_args with invalid vCPU argument."""
+    from awsEC2pricing import parse_args
+    test_argv = ['-t', '-1', '16', 'Linux', REGION_NVIRGINIA]
+    monkeypatch.setattr('sys.argv', ['awsEC2pricing.py'] + test_argv)
+    with pytest.raises(SystemExit):
+        parse_args()
+
+def test_parse_args_invalid_ram(monkeypatch):
+    """Test parse_args with invalid RAM argument."""
+    from awsEC2pricing import parse_args
+    test_argv = ['-t', '8', '-1', 'Linux', REGION_NVIRGINIA]
+    monkeypatch.setattr('sys.argv', ['awsEC2pricing.py'] + test_argv)
+    with pytest.raises(SystemExit):
+        parse_args()
+
+def test_parse_args_help(monkeypatch):
+    """Test parse_args with help argument."""
+    from awsEC2pricing import parse_args
+    test_argv = ['-h']
+    monkeypatch.setattr('sys.argv', ['awsEC2pricing.py'] + test_argv)
+    with pytest.raises(SystemExit):
+        parse_args()
+
+def test_parse_args_no_args(monkeypatch):
+    """Test parse_args with no arguments."""
+    from awsEC2pricing import parse_args
+    test_argv = []
+    monkeypatch.setattr('sys.argv', ['awsEC2pricing.py'] + test_argv)
+    with pytest.raises(SystemExit):
+        parse_args()
+
+def test_adapt_date_and_convert_date():
+    """Test adapt_date and convert_date functions."""
+    from includes import adapt_date, convert_date
+    d = date(2024, 5, 2)
+    s = adapt_date(d)
+    assert s == "2024-05-02"
+    # convert_date expects bytes
+    assert convert_date(b"2024-05-02") == d
+
+def test_get_region_code_and_os_description():
+    """Test get_region_code and get_os_description functions."""
+    from includes import get_region_code, get_os_description
+    assert get_region_code("US East (N. Virginia)") == "us-east-1"
+    assert get_region_code("Nonexistent") == "Nonexistent"
+    assert get_os_description("Linux") == "Linux/UNIX (Amazon VPC)"
+    assert get_os_description("OtherOS") == "OtherOS"
+
+def test_awsp_get_boto_clients_invalid_region(monkeypatch):
+    """Test get_boto_clients with invalid region fallback."""
+    from includes import AWSPricing
+    # Patch credentials to avoid file access
+    monkeypatch.setattr(AWSPricing, "_load_credentials", lambda self: {
+        "access_key": "x", "secret_key": "y", "default_region": "us-east-1"
+    })
+    ap = AWSPricing()
+    pricing, ec2 = ap.get_boto_clients("Nonexistent")
+    assert pricing is not None
+    assert ec2 is not None
+
+def test_awsp_load_credentials_error(tmp_path, monkeypatch):
+    """Test _load_credentials error handling."""
+    from includes import AWSPricing
+    # Patch open to FileNotFoundError
+    monkeypatch.setattr("builtins.open", lambda *a, **k: (_ for _ in ()).throw(FileNotFoundError("fail")))
+    ap = AWSPricing
+    with pytest.raises(Exception):
+        ap()._load_credentials()
+
+def test_parse_price_list_item_invalid(monkeypatch):
+    """Test _parse_price_list_item with invalid price data."""
+    from includes import AWSPricing
+    monkeypatch.setattr(AWSPricing, "_load_credentials", lambda self: {
+        "access_key": "x", "secret_key": "y", "default_region": "us-east-1"
+    })
+    ap = AWSPricing()
+    # Missing keys
+    assert ap._parse_price_list_item("{}", "us-east-1") is None
+    # Invalid price
+    bad_json = '{"terms": {"OnDemand": {}}, "product": {"attributes": {}}}'
+    assert ap._parse_price_list_item(bad_json, "us-east-1") is None
+
+def test_get_spot_prices_handles_exception(monkeypatch):
+    """Test get_spot_prices handles exceptions gracefully."""
+    from includes import AWSPricing
+    monkeypatch.setattr(AWSPricing, "_load_credentials", lambda self: {
+        "access_key": "x", "secret_key": "y", "default_region": "us-east-1"
+    })
+    ap = AWSPricing()
+    class FakeEC2:
+        def describe_spot_price_history(self, **kwargs):
+            raise KeyError("fail")
+    monkeypatch.setattr(ap, "get_boto_clients", lambda region: (None, FakeEC2()))
+    prices = ap.get_spot_prices(["t3.medium"], "Linux", "us-east-1")
+    assert prices["t3.medium"] == 0.0
+
+def test_get_spot_interruption_rates_handles_exception(monkeypatch):
+    """Test get_spot_interruption_rates handles exceptions gracefully."""
+    from includes import AWSPricing
+    monkeypatch.setattr(AWSPricing, "_load_credentials", lambda self: {
+        "access_key": "x", "secret_key": "y", "default_region": "us-east-1"
+    })
+    ap = AWSPricing()
+    # Patch requests.get to raise exception
+    import requests
+    monkeypatch.setattr(requests, "get", lambda url: (_ for _ in ()).throw(requests.exceptions.RequestException("fail")))
+    rates = ap.get_spot_interruption_rates(["t3.medium"], "Linux", "us-east-1")
+    assert rates["t3.medium"] == ""
