@@ -140,6 +140,16 @@ def test_get_burstable_info():
     for instance, expected in BURSTABLE_INSTANCES.items():
         assert get_burstable_info(instance) == expected
 
+def test_instance_and_header_format():
+    """Test HEADER_FORMAT and INSTANCE_FORMAT for correct formatting and columns."""
+    from awsEC2pricing import HEADER_FORMAT, INSTANCE_FORMAT
+    header = HEADER_FORMAT.format("Instance", "vCPU", "RAM", "OS", "OnDemand", "Monthly", "Spot", "SpotMonthly", "Interruption", "Burst")
+    assert "Instance" in header
+    assert "Burst" in header
+    instance = INSTANCE_FORMAT.format("t3.micro", 2, 4, "Linux", 0.0116, 8.395, 0.0035, 2.555, "<5%", "10%")
+    assert "t3.micro" in instance
+    assert "10%" in instance
+    assert "<5%" in instance
 def test_parse_args_invalid_vcpu(monkeypatch):
     """Test parse_args with invalid vCPU argument."""
     from awsEC2pricing import parse_args
